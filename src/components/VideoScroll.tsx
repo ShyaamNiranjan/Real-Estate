@@ -5,12 +5,18 @@ import { useGSAP } from '@gsap/react'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
+// Stops iOS/Android URL-bar resize from constantly recalculating pins mid-scroll
+ScrollTrigger.config({ ignoreMobileResize: true })
+
 const FRAME_COUNT = 240
 
 type Variant = 'landscape' | 'portrait'
 
+function isTouchDevice() {
+  return window.matchMedia('(hover: none), (pointer: coarse)').matches
+}
+
 function getVariant(): Variant {
-  // Phones / small vertical viewports get the 9:16 cut
   const narrow = window.matchMedia('(max-width: 900px)').matches
   const tall = window.innerHeight >= window.innerWidth
   return narrow && tall ? 'portrait' : 'landscape'
@@ -52,7 +58,9 @@ function loadFrames(
       if (loaded >= FRAME_COUNT) resolve(frames)
     }
 
-    for (let i = 0; i < FRAME_COUNT; i++) {
+    // Stagger decode a bit on mobile so the main thread isn't flooded
+    const touch = isTouchDevice()
+    const kick = (i: number) => {
       const img = new Image()
       img.decoding = 'async'
       img.src = frameSrc(variant, i)
@@ -66,6 +74,23 @@ function loadFrames(
       }
       img.onerror = () => bump()
     }
+
+    if (!touch) {
+      for (let i = 0; i < FRAME_COUNT; i++) kick(i)
+      return
+    }
+
+    let i = 0
+    const batch = 12
+    const pump = () => {
+      if (signal.cancelled) return
+      const end = Math.min(FRAME_COUNT, i + batch)
+      for (; i < end; i++) kick(i)
+      if (i < FRAME_COUNT) {
+        window.setTimeout(pump, 0)
+      }
+    }
+    pump()
   })
 }
 
@@ -74,6 +99,7 @@ export function VideoScroll() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const framesRef = useRef<(HTMLImageElement | null)[]>([])
   const drawnFrameRef = useRef(-1)
+  const lastWidthRef = useRef(0)
   const [variant, setVariant] = useState<Variant>(() =>
     typeof window !== 'undefined' ? getVariant() : 'landscape',
   )
@@ -91,14 +117,11 @@ export function VideoScroll() {
     const mqOrient = window.matchMedia('(orientation: portrait)')
     mqWidth.addEventListener('change', syncVariant)
     mqOrient.addEventListener('change', syncVariant)
-    window.addEventListener('resize', syncVariant)
-    window.addEventListener('orientationchange', syncVariant)
+    // Intentionally NOT listening to window resize — mobile chrome toggles fire it constantly
 
     return () => {
       mqWidth.removeEventListener('change', syncVariant)
       mqOrient.removeEventListener('change', syncVariant)
-      window.removeEventListener('resize', syncVariant)
-      window.removeEventListener('orientationchange', syncVariant)
     }
   }, [])
 
@@ -126,13 +149,29 @@ export function VideoScroll() {
       const canvas = canvasRef.current
       if (!section || !canvas || !ready) return
 
-      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true })
+      const touch = isTouchDevice()
+      const ctx = canvas.getContext('2d', {
+        alpha: false,
+        desynchronized: true,
+        // Prefer speed over readback on mobile GPUs
+        willReadFrequently: false,
+      })
       if (!ctx) return
       ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
+      ctx.imageSmoothingQuality = touch ? 'medium' : 'high'
 
-      const resize = () => {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      // Smooths touch scrolling with pinned scrub on iOS/Android
+      const normalizer = touch
+        ? ScrollTrigger.normalizeScroll({
+            allowNestedScroll: true,
+            lockAxis: false,
+            type: 'touch,wheel,pointer',
+          })
+        : null
+
+      const resizeCanvas = () => {
+        // Cap DPR on phones — 3x canvases are a common stutter source
+        const dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 2)
         const w = section.clientWidth
         const h = section.clientHeight
         canvas.width = Math.floor(w * dpr)
@@ -141,6 +180,7 @@ export function VideoScroll() {
         canvas.style.height = `${h}px`
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         drawnFrameRef.current = -1
+        lastWidthRef.current = window.innerWidth
       }
 
       const paint = (frameIndex: number) => {
@@ -151,41 +191,56 @@ export function VideoScroll() {
 
         const w = section.clientWidth
         const h = section.clientHeight
-        ctx.fillStyle = '#0c0e0d'
-        ctx.fillRect(0, 0, w, h)
         drawCover(ctx, img, w, h)
         drawnFrameRef.current = idx
       }
 
-      const pxPerFrame = variant === 'portrait' ? 8 : 11
+      const pxPerFrame = variant === 'portrait' ? 9 : 11
       const st = ScrollTrigger.create({
         trigger: section,
         start: 'top top',
         end: () => `+=${FRAME_COUNT * pxPerFrame}`,
         pin: true,
+        // Fixed pin is more stable on mobile browsers than transform pinning
+        pinType: touch ? 'fixed' : 'transform',
         scrub: true,
-        anticipatePin: 1,
+        anticipatePin: touch ? 0 : 1,
         invalidateOnRefresh: true,
+        fastScrollEnd: true,
+        preventOverlaps: true,
         onUpdate: (self) => {
           paint(Math.round(self.progress * (FRAME_COUNT - 1)))
         },
       })
 
-      resize()
+      resizeCanvas()
       paint(0)
-      ScrollTrigger.refresh()
+
+      const onOrientation = () => {
+        // Only hard-refresh after orientation settles
+        window.setTimeout(() => {
+          resizeCanvas()
+          ScrollTrigger.refresh()
+          paint(Math.round(st.progress * (FRAME_COUNT - 1)))
+        }, 250)
+      }
 
       const onResize = () => {
-        resize()
+        // Ignore height-only changes (mobile URL bar). Refresh only on real width changes.
+        const width = window.innerWidth
+        if (Math.abs(width - lastWidthRef.current) < 2) return
+        resizeCanvas()
         ScrollTrigger.refresh()
         paint(Math.round(st.progress * (FRAME_COUNT - 1)))
       }
-      window.addEventListener('resize', onResize)
-      window.addEventListener('orientationchange', onResize)
+
+      window.addEventListener('resize', onResize, { passive: true })
+      window.addEventListener('orientationchange', onOrientation)
 
       return () => {
         window.removeEventListener('resize', onResize)
-        window.removeEventListener('orientationchange', onResize)
+        window.removeEventListener('orientationchange', onOrientation)
+        normalizer?.kill()
         st.kill()
       }
     },
