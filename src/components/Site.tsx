@@ -11,7 +11,10 @@ export function Site() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.85)
+    const onScroll = () => {
+      const top = rootRef.current?.getBoundingClientRect().top ?? Infinity
+      setScrolled(top < -40)
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)

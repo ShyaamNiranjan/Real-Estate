@@ -28,6 +28,8 @@
 }
 
 html {
+  /* Overscroll / rubber-band areas show charcoal, never the cream body */
+  background: #0c0e0d;
   scroll-behavior: auto;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
