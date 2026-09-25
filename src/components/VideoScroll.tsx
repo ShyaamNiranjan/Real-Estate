@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
+import { copy } from '../content/copy'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
-// Stops iOS/Android URL-bar resize from constantly recalculating pins mid-scroll
 ScrollTrigger.config({ ignoreMobileResize: true })
 
 const FRAME_COUNT = 240
@@ -58,7 +58,6 @@ function loadFrames(
       if (loaded >= FRAME_COUNT) resolve(frames)
     }
 
-    // Stagger decode a bit on mobile so the main thread isn't flooded
     const touch = isTouchDevice()
     const kick = (i: number) => {
       const img = new Image()
@@ -86,9 +85,7 @@ function loadFrames(
       if (signal.cancelled) return
       const end = Math.min(FRAME_COUNT, i + batch)
       for (; i < end; i++) kick(i)
-      if (i < FRAME_COUNT) {
-        window.setTimeout(pump, 0)
-      }
+      if (i < FRAME_COUNT) window.setTimeout(pump, 0)
     }
     pump()
   })
@@ -97,8 +94,11 @@ function loadFrames(
 export function VideoScroll() {
   const sectionRef = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const heroRef = useRef<HTMLDivElement>(null)
+  const beatRefs = useRef<(HTMLElement | null)[]>([])
   const framesRef = useRef<(HTMLImageElement | null)[]>([])
   const drawnFrameRef = useRef(-1)
+  const activeBeatRef = useRef(-1)
   const lastWidthRef = useRef(0)
   const [variant, setVariant] = useState<Variant>(() =>
     typeof window !== 'undefined' ? getVariant() : 'landscape',
@@ -117,7 +117,6 @@ export function VideoScroll() {
     const mqOrient = window.matchMedia('(orientation: portrait)')
     mqWidth.addEventListener('change', syncVariant)
     mqOrient.addEventListener('change', syncVariant)
-    // Intentionally NOT listening to window resize — mobile chrome toggles fire it constantly
 
     return () => {
       mqWidth.removeEventListener('change', syncVariant)
@@ -153,14 +152,12 @@ export function VideoScroll() {
       const ctx = canvas.getContext('2d', {
         alpha: false,
         desynchronized: true,
-        // Prefer speed over readback on mobile GPUs
         willReadFrequently: false,
       })
       if (!ctx) return
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = touch ? 'medium' : 'high'
 
-      // Smooths touch scrolling with pinned scrub on iOS/Android
       const normalizer = touch
         ? ScrollTrigger.normalizeScroll({
             allowNestedScroll: true,
@@ -170,7 +167,6 @@ export function VideoScroll() {
         : null
 
       const resizeCanvas = () => {
-        // Cap DPR on phones — 3x canvases are a common stutter source
         const dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 2)
         const w = section.clientWidth
         const h = section.clientHeight
@@ -188,11 +184,31 @@ export function VideoScroll() {
         if (idx === drawnFrameRef.current) return
         const img = framesRef.current[idx]
         if (!img) return
-
-        const w = section.clientWidth
-        const h = section.clientHeight
-        drawCover(ctx, img, w, h)
+        drawCover(ctx, img, section.clientWidth, section.clientHeight)
         drawnFrameRef.current = idx
+      }
+
+      const setHero = (visible: boolean) => {
+        heroRef.current?.classList.toggle('is-visible', visible)
+      }
+
+      const setBeat = (index: number) => {
+        if (activeBeatRef.current === index) return
+        activeBeatRef.current = index
+        beatRefs.current.forEach((el, i) => {
+          el?.classList.toggle('is-active', i === index)
+        })
+      }
+
+      const syncCopy = (progress: number) => {
+        setHero(progress < 0.04)
+        let next = -1
+        if (progress >= 0.04) {
+          copy.scrollBeats.forEach((beat, i) => {
+            if (progress >= beat.at) next = i
+          })
+        }
+        setBeat(next)
       }
 
       const pxPerFrame = variant === 'portrait' ? 9 : 11
@@ -201,7 +217,6 @@ export function VideoScroll() {
         start: 'top top',
         end: () => `+=${FRAME_COUNT * pxPerFrame}`,
         pin: true,
-        // Fixed pin is more stable on mobile browsers than transform pinning
         pinType: touch ? 'fixed' : 'transform',
         scrub: true,
         anticipatePin: touch ? 0 : 1,
@@ -210,28 +225,30 @@ export function VideoScroll() {
         preventOverlaps: true,
         onUpdate: (self) => {
           paint(Math.round(self.progress * (FRAME_COUNT - 1)))
+          syncCopy(self.progress)
         },
       })
 
       resizeCanvas()
       paint(0)
+      syncCopy(0)
 
       const onOrientation = () => {
-        // Only hard-refresh after orientation settles
         window.setTimeout(() => {
           resizeCanvas()
           ScrollTrigger.refresh()
           paint(Math.round(st.progress * (FRAME_COUNT - 1)))
+          syncCopy(st.progress)
         }, 250)
       }
 
       const onResize = () => {
-        // Ignore height-only changes (mobile URL bar). Refresh only on real width changes.
         const width = window.innerWidth
         if (Math.abs(width - lastWidthRef.current) < 2) return
         resizeCanvas()
         ScrollTrigger.refresh()
         paint(Math.round(st.progress * (FRAME_COUNT - 1)))
+        syncCopy(st.progress)
       }
 
       window.addEventListener('resize', onResize, { passive: true })
@@ -257,6 +274,33 @@ export function VideoScroll() {
             <p className="video-scroll__loader-pct">{loadPct}%</p>
           </div>
         )}
+
+        <div className="video-scroll__veil" aria-hidden />
+
+        <div className={`video-scroll__hero ${ready ? 'is-visible' : ''}`} ref={heroRef}>
+          <p className="video-scroll__brand">{copy.hero.brand}</p>
+          <h1 className="video-scroll__line">{copy.hero.line}</h1>
+          <p className="video-scroll__support">{copy.hero.support}</p>
+          <div className="video-scroll__hint">
+            <span>{copy.hero.scrollHint}</span>
+            <span className="video-scroll__hint-line" />
+          </div>
+        </div>
+
+        <div className="video-scroll__beats" aria-live="polite">
+          {copy.scrollBeats.map((beat, i) => (
+            <aside
+              key={beat.id}
+              ref={(el) => {
+                beatRefs.current[i] = el
+              }}
+              className={`beat beat--${beat.side}`}
+            >
+              <p className="beat__label">{beat.label}</p>
+              <p className="beat__text">{beat.text}</p>
+            </aside>
+          ))}
+        </div>
       </div>
     </section>
   )
