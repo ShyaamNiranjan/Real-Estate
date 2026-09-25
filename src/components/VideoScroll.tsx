@@ -8,9 +8,10 @@ gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 ScrollTrigger.config({ ignoreMobileResize: true })
 
-const FRAME_COUNT = 240
-
 type Variant = 'landscape' | 'portrait'
+
+const LANDSCAPE_FRAMES = 240
+const PORTRAIT_FRAMES = 120 // 12fps lite set — far less memory on phones
 
 function isTouchDevice() {
   return window.matchMedia('(hover: none), (pointer: coarse)').matches
@@ -22,9 +23,15 @@ function getVariant(): Variant {
   return narrow && tall ? 'portrait' : 'landscape'
 }
 
+function frameCount(variant: Variant) {
+  return variant === 'portrait' ? PORTRAIT_FRAMES : LANDSCAPE_FRAMES
+}
+
 function frameSrc(variant: Variant, index: number) {
-  const folder = variant === 'portrait' ? 'sequence-portrait' : 'sequence'
-  return `/media/${folder}/frame-${String(index + 1).padStart(3, '0')}.jpg`
+  if (variant === 'portrait') {
+    return `/media/sequence-portrait-lite/frame-${String(index + 1).padStart(3, '0')}.jpg`
+  }
+  return `/media/sequence/frame-${String(index + 1).padStart(3, '0')}.jpg`
 }
 
 function drawCover(
@@ -47,18 +54,18 @@ function loadFrames(
   onProgress: (pct: number) => void,
   signal: { cancelled: boolean },
 ) {
+  const total = frameCount(variant)
   return new Promise<(HTMLImageElement | null)[]>((resolve) => {
-    const frames: (HTMLImageElement | null)[] = Array(FRAME_COUNT).fill(null)
+    const frames: (HTMLImageElement | null)[] = Array(total).fill(null)
     let loaded = 0
 
     const bump = () => {
       loaded += 1
       if (signal.cancelled) return
-      onProgress(Math.round((loaded / FRAME_COUNT) * 100))
-      if (loaded >= FRAME_COUNT) resolve(frames)
+      onProgress(Math.round((loaded / total) * 100))
+      if (loaded >= total) resolve(frames)
     }
 
-    const touch = isTouchDevice()
     const kick = (i: number) => {
       const img = new Image()
       img.decoding = 'async'
@@ -74,18 +81,14 @@ function loadFrames(
       img.onerror = () => bump()
     }
 
-    if (!touch) {
-      for (let i = 0; i < FRAME_COUNT; i++) kick(i)
-      return
-    }
-
+    // Small batches keep mobile main thread responsive while decoding
     let i = 0
-    const batch = 12
+    const batch = isTouchDevice() ? 8 : 24
     const pump = () => {
       if (signal.cancelled) return
-      const end = Math.min(FRAME_COUNT, i + batch)
+      const end = Math.min(total, i + batch)
       for (; i < end; i++) kick(i)
-      if (i < FRAME_COUNT) window.setTimeout(pump, 0)
+      if (i < total) window.setTimeout(pump, 0)
     }
     pump()
   })
@@ -128,6 +131,10 @@ export function VideoScroll() {
     const signal = { cancelled: false }
     setReady(false)
     setLoadPct(0)
+    // Drop old bitmaps so phones can reclaim memory when switching
+    framesRef.current.forEach((img) => {
+      if (img) img.src = ''
+    })
     framesRef.current = []
     drawnFrameRef.current = -1
 
@@ -149,6 +156,7 @@ export function VideoScroll() {
       if (!section || !canvas || !ready) return
 
       const touch = isTouchDevice()
+      const total = frameCount(variant)
       const ctx = canvas.getContext('2d', {
         alpha: false,
         desynchronized: true,
@@ -156,18 +164,11 @@ export function VideoScroll() {
       })
       if (!ctx) return
       ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = touch ? 'medium' : 'high'
-
-      const normalizer = touch
-        ? ScrollTrigger.normalizeScroll({
-            allowNestedScroll: true,
-            lockAxis: false,
-            type: 'touch,wheel,pointer',
-          })
-        : null
+      ctx.imageSmoothingQuality = touch ? 'low' : 'high'
 
       const resizeCanvas = () => {
-        const dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 2)
+        // DPR 1 on phones — big win for fill-rate / memory
+        const dpr = touch ? 1 : Math.min(window.devicePixelRatio || 1, 2)
         const w = section.clientWidth
         const h = section.clientHeight
         canvas.width = Math.floor(w * dpr)
@@ -180,7 +181,7 @@ export function VideoScroll() {
       }
 
       const paint = (frameIndex: number) => {
-        const idx = Math.max(0, Math.min(FRAME_COUNT - 1, frameIndex))
+        const idx = Math.max(0, Math.min(total - 1, frameIndex))
         if (idx === drawnFrameRef.current) return
         const img = framesRef.current[idx]
         if (!img) return
@@ -211,20 +212,20 @@ export function VideoScroll() {
         setBeat(next)
       }
 
-      const pxPerFrame = variant === 'portrait' ? 9 : 11
+      // Longer scrub distance on phones so each frame holds longer (less thrash)
+      const pxPerFrame = touch ? 14 : variant === 'portrait' ? 10 : 11
       const st = ScrollTrigger.create({
         trigger: section,
         start: 'top top',
-        end: () => `+=${FRAME_COUNT * pxPerFrame}`,
+        end: () => `+=${total * pxPerFrame}`,
         pin: true,
-        pinType: touch ? 'fixed' : 'transform',
+        // transform pin avoids the white gap / jump when unpinning on mobile
+        pinType: 'transform',
         scrub: true,
-        anticipatePin: touch ? 0 : 1,
+        anticipatePin: 0,
         invalidateOnRefresh: true,
-        fastScrollEnd: true,
-        preventOverlaps: true,
         onUpdate: (self) => {
-          paint(Math.round(self.progress * (FRAME_COUNT - 1)))
+          paint(Math.round(self.progress * (total - 1)))
           syncCopy(self.progress)
         },
       })
@@ -237,17 +238,17 @@ export function VideoScroll() {
         window.setTimeout(() => {
           resizeCanvas()
           ScrollTrigger.refresh()
-          paint(Math.round(st.progress * (FRAME_COUNT - 1)))
+          paint(Math.round(st.progress * (total - 1)))
           syncCopy(st.progress)
-        }, 250)
+        }, 300)
       }
 
       const onResize = () => {
         const width = window.innerWidth
-        if (Math.abs(width - lastWidthRef.current) < 2) return
+        if (Math.abs(width - lastWidthRef.current) < 8) return
         resizeCanvas()
         ScrollTrigger.refresh()
-        paint(Math.round(st.progress * (FRAME_COUNT - 1)))
+        paint(Math.round(st.progress * (total - 1)))
         syncCopy(st.progress)
       }
 
@@ -257,7 +258,6 @@ export function VideoScroll() {
       return () => {
         window.removeEventListener('resize', onResize)
         window.removeEventListener('orientationchange', onOrientation)
-        normalizer?.kill()
         st.kill()
       }
     },
