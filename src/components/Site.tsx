@@ -8,6 +8,7 @@ gsap.registerPlugin(ScrollTrigger)
 export function Site() {
   const rootRef = useRef<HTMLElement>(null)
   const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.85)
@@ -17,6 +18,11 @@ export function Site() {
   }, [])
 
   useEffect(() => {
+    document.body.classList.toggle('nav-open', menuOpen)
+    return () => document.body.classList.remove('nav-open')
+  }, [menuOpen])
+
+  useEffect(() => {
     const root = rootRef.current
     if (!root) return
 
@@ -24,15 +30,15 @@ export function Site() {
       gsap.utils.toArray<HTMLElement>('.reveal').forEach((el) => {
         gsap.fromTo(
           el,
-          { y: 36, opacity: 0 },
+          { y: 28, opacity: 0 },
           {
             y: 0,
             opacity: 1,
-            duration: 1,
+            duration: 0.9,
             ease: 'power2.out',
             scrollTrigger: {
               trigger: el,
-              start: 'top 85%',
+              start: 'top 88%',
               toggleActions: 'play none none reverse',
             },
           },
@@ -41,16 +47,16 @@ export function Site() {
 
       gsap.fromTo(
         '.tile',
-        { y: 48, opacity: 0 },
+        { y: 36, opacity: 0 },
         {
           y: 0,
           opacity: 1,
-          duration: 0.9,
-          stagger: 0.12,
+          duration: 0.85,
+          stagger: 0.1,
           ease: 'power2.out',
           scrollTrigger: {
             trigger: '.tiles',
-            start: 'top 78%',
+            start: 'top 82%',
           },
         },
       )
@@ -60,16 +66,28 @@ export function Site() {
   }, [])
 
   const scrollTo = (id: string) => {
+    setMenuOpen(false)
     const el = document.getElementById(id)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Allow menu close paint before scrolling
+    requestAnimationFrame(() => {
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   return (
     <main className="site" ref={rootRef}>
-      <header className={`nav ${scrolled ? 'is-solid' : ''}`}>
-        <button type="button" className="nav__brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+      <header className={`nav ${scrolled || menuOpen ? 'is-solid' : ''}`}>
+        <button
+          type="button"
+          className="nav__brand"
+          onClick={() => {
+            setMenuOpen(false)
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
+        >
           {copy.brand.name}
         </button>
+
         <nav className="nav__links" aria-label="Primary">
           {copy.brand.nav.map((item) => (
             <button
@@ -82,7 +100,46 @@ export function Site() {
             </button>
           ))}
         </nav>
+
+        <button
+          type="button"
+          className={`nav__toggle ${menuOpen ? 'is-open' : ''}`}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-nav"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span />
+          <span />
+        </button>
       </header>
+
+      <div
+        id="mobile-nav"
+        className={`nav-drawer ${menuOpen ? 'is-open' : ''}`}
+        aria-hidden={!menuOpen}
+      >
+        <nav className="nav-drawer__links" aria-label="Mobile">
+          {copy.brand.nav.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className="nav-drawer__link"
+              onClick={() => scrollTo(item.toLowerCase())}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+      </div>
+      {menuOpen && (
+        <button
+          type="button"
+          className="nav-backdrop"
+          aria-label="Close menu"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
 
       <section className="section section--intro" id="intro">
         <div className="section__inner reveal">
@@ -135,7 +192,12 @@ export function Site() {
 
       <section className="section section--location" id="location">
         <div className="location">
-          <div className="location__visual reveal" style={{ backgroundImage: 'url(/frames/frame-07.jpg)' }} />
+          <div
+            className="location__visual reveal"
+            style={{ backgroundImage: 'url(/frames/frame-07.jpg)' }}
+            role="img"
+            aria-label="Residence interior looking toward the pool"
+          />
           <div className="location__copy reveal">
             <p className="eyebrow">Location</p>
             <h2 className="section__title">{copy.site.location.title}</h2>
@@ -169,7 +231,7 @@ export function Site() {
             </label>
             <label className="enquire__full">
               <span>Message</span>
-              <textarea name="message" rows={3} placeholder="Preferred dates, party size…" />
+              <textarea name="message" rows={4} placeholder="Preferred dates, party size…" />
             </label>
             <button type="submit" className="btn">
               {copy.site.enquire.cta}

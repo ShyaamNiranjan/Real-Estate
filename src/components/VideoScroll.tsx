@@ -102,7 +102,9 @@ export function VideoScroll() {
         drawnFrameRef.current = idx
       }
 
-      const pxPerFrame = 11
+      // Slightly denser scrub on phones so the sequence isn't endless
+      const isNarrow = window.matchMedia('(max-width: 768px)').matches
+      const pxPerFrame = isNarrow ? 8 : 11
       const st = ScrollTrigger.create({
         trigger: section,
         start: 'top top',
@@ -110,6 +112,7 @@ export function VideoScroll() {
         pin: true,
         scrub: true,
         anticipatePin: 1,
+        invalidateOnRefresh: true,
         onUpdate: (self) => {
           paint(Math.round(self.progress * (FRAME_COUNT - 1)))
         },
@@ -120,12 +123,15 @@ export function VideoScroll() {
 
       const onResize = () => {
         resize()
+        ScrollTrigger.refresh()
         paint(Math.round(st.progress * (FRAME_COUNT - 1)))
       }
       window.addEventListener('resize', onResize)
+      window.addEventListener('orientationchange', onResize)
 
       return () => {
         window.removeEventListener('resize', onResize)
+        window.removeEventListener('orientationchange', onResize)
         st.kill()
       }
     },
