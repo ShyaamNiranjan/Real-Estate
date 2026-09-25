@@ -12,20 +12,18 @@ const frameSrc = (index: number) =>
 
 function drawCover(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: CanvasImageSource,
   width: number,
   height: number,
+  iw: number,
+  ih: number,
 ) {
-  const iw = img.naturalWidth
-  const ih = img.naturalHeight
   if (!iw || !ih) return
-
   const scale = Math.max(width / iw, height / ih)
   const dw = iw * scale
   const dh = ih * scale
   const dx = (width - dw) / 2
   const dy = (height - dh) / 2
-  ctx.clearRect(0, 0, width, height)
   ctx.drawImage(img, dx, dy, dw, dh)
 }
 
@@ -37,7 +35,6 @@ export function VideoScroll() {
   const beatRefs = useRef<(HTMLElement | null)[]>([])
   const framesRef = useRef<(HTMLImageElement | null)[]>([])
   const activeBeatRef = useRef(-1)
-  const drawnFrameRef = useRef(-1)
   const [ready, setReady] = useState(false)
   const [loadPct, setLoadPct] = useState(0)
 
@@ -49,23 +46,33 @@ export function VideoScroll() {
     let loaded = 0
     const bump = () => {
       loaded += 1
-      if (!cancelled) {
-        setLoadPct(Math.round((loaded / FRAME_COUNT) * 100))
-        // Ready once we have the first stretch — rest continues loading
-        if (loaded >= Math.min(36, FRAME_COUNT)) setReady(true)
-      }
+      if (cancelled) return
+      const pct = Math.round((loaded / FRAME_COUNT) * 100)
+      setLoadPct(pct)
+      // Wait for every frame — missing frames are what makes scrub feel choppy
+      if (loaded >= FRAME_COUNT) setReady(true)
     }
 
-    for (let i = 0; i < FRAME_COUNT; i++) {
+    // Load in waves so early frames decode first, then fill the rest
+    const loadOne = (i: number) => {
       const img = new Image()
       img.decoding = 'async'
       img.src = frameSrc(i)
-      img.onload = () => {
+      const done = () => {
         frames[i] = img
         bump()
       }
+      img.onload = () => {
+        if (img.decode) {
+          img.decode().then(done).catch(done)
+        } else {
+          done()
+        }
+      }
       img.onerror = () => bump()
     }
+
+    for (let i = 0; i < FRAME_COUNT; i++) loadOne(i)
 
     return () => {
       cancelled = true
@@ -78,8 +85,10 @@ export function VideoScroll() {
       const canvas = canvasRef.current
       if (!section || !canvas || !ready) return
 
-      const ctx = canvas.getContext('2d', { alpha: false })
+      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true })
       if (!ctx) return
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
 
       const resize = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -90,46 +99,45 @@ export function VideoScroll() {
         canvas.style.width = `${w}px`
         canvas.style.height = `${h}px`
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-        // Force redraw on resize
-        drawnFrameRef.current = -1
       }
       resize()
       window.addEventListener('resize', resize)
 
-      const paint = (frameIndex: number) => {
-        const idx = Math.max(0, Math.min(FRAME_COUNT - 1, frameIndex))
-        if (idx === drawnFrameRef.current) return
+      const paintBlended = (exact: number) => {
+        const max = FRAME_COUNT - 1
+        const clamped = Math.max(0, Math.min(max, exact))
+        const i0 = Math.floor(clamped)
+        const i1 = Math.min(max, i0 + 1)
+        const t = clamped - i0
 
-        const img = framesRef.current[idx]
-        if (!img) {
-          // Fallback to nearest loaded frame
-          for (let d = 1; d < FRAME_COUNT; d++) {
-            const a = framesRef.current[idx - d]
-            const b = framesRef.current[idx + d]
-            if (a) {
-              drawCover(ctx, a, section.clientWidth, section.clientHeight)
-              drawnFrameRef.current = idx - d
-              return
-            }
-            if (b) {
-              drawCover(ctx, b, section.clientWidth, section.clientHeight)
-              drawnFrameRef.current = idx + d
-              return
-            }
-          }
-          return
+        const a = framesRef.current[i0]
+        const b = framesRef.current[i1]
+        const w = section.clientWidth
+        const h = section.clientHeight
+
+        ctx.globalAlpha = 1
+        ctx.fillStyle = '#0c0e0d'
+        ctx.fillRect(0, 0, w, h)
+
+        if (a) {
+          ctx.globalAlpha = 1
+          drawCover(ctx, a, w, h, a.naturalWidth, a.naturalHeight)
         }
 
-        drawCover(ctx, img, section.clientWidth, section.clientHeight)
-        drawnFrameRef.current = idx
+        // Crossfade into the next frame — removes hard frame pops
+        if (b && t > 0.001 && i1 !== i0) {
+          ctx.globalAlpha = t
+          drawCover(ctx, b, w, h, b.naturalWidth, b.naturalHeight)
+          ctx.globalAlpha = 1
+        }
       }
 
-      // Draw opening frame
-      paint(0)
+      paintBlended(0)
 
       let target = 0
       let current = 0
-      const ease = 0.065 // lower = silkier catch-up (reference feel)
+      // Higher = snappier; lower = silkier. Tuned for Apple-page feel with Lenis.
+      const smoothing = 7.5
 
       const setBeat = (index: number) => {
         if (activeBeatRef.current === index) return
@@ -146,7 +154,7 @@ export function VideoScroll() {
       const st = ScrollTrigger.create({
         trigger: section,
         start: 'top top',
-        end: '+=900%',
+        end: '+=1100%',
         pin: true,
         scrub: true,
         anticipatePin: 1,
@@ -156,22 +164,22 @@ export function VideoScroll() {
       })
 
       const tick = () => {
-        current += (target - current) * ease
-        // Snap when nearly there to avoid endless micro-lerp
-        if (Math.abs(target - current) < 0.00015) current = target
+        const dt = Math.min(0.05, gsap.ticker.deltaRatio(60) / 60)
+        // Frame-rate independent exponential smooth damp
+        const alpha = 1 - Math.exp(-smoothing * dt)
+        current += (target - current) * alpha
+        if (Math.abs(target - current) < 0.00008) current = target
 
-        const frameIndex = Math.round(current * (FRAME_COUNT - 1))
-        paint(frameIndex)
+        paintBlended(current * (FRAME_COUNT - 1))
 
         if (progressRef.current) {
           progressRef.current.style.transform = `scaleX(${current})`
         }
 
-        // Hero only at the very start — never stack with side captions
-        setHero(current < 0.035)
+        setHero(current < 0.03)
 
         let next = -1
-        if (current >= 0.04) {
+        if (current >= 0.035) {
           copy.scrollBeats.forEach((beat, i) => {
             if (current >= beat.at) next = i
           })
@@ -198,7 +206,7 @@ export function VideoScroll() {
         {!ready && (
           <div className="video-scroll__loader" aria-live="polite">
             <p className="video-scroll__brand">AURELIA</p>
-            <p className="video-scroll__loader-pct">{loadPct}%</p>
+            <p className="video-scroll__loader-pct">Preparing {loadPct}%</p>
           </div>
         )}
 

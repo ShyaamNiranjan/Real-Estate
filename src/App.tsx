@@ -11,11 +11,13 @@ gsap.registerPlugin(ScrollTrigger)
 export default function App() {
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.6,
-      easing: (t) => 1 - Math.pow(1 - t, 4),
+      duration: 1.35,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -11 * t)),
       smoothWheel: true,
-      wheelMultiplier: 0.65,
-      touchMultiplier: 1,
+      syncTouch: false,
+      wheelMultiplier: 0.55,
+      touchMultiplier: 0.85,
+      lerp: 0.075,
     })
 
     lenis.on('scroll', ScrollTrigger.update)
