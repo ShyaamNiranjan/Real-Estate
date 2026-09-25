@@ -55,12 +55,7 @@
 }
 
 .video-scroll__grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.08;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode: soft-light;
+  display: none;
 }
 
 .video-scroll__hero {
@@ -157,14 +152,11 @@
   position: absolute;
   top: 50%;
   width: min(280px, 34vw);
-  transform: translateY(-50%) translateY(14px);
+  transform: translateY(-50%) translateY(10px);
   opacity: 0;
-  filter: blur(4px);
   transition:
-    opacity 1.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 1.4s cubic-bezier(0.16, 1, 0.3, 1),
-    filter 1.35s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform, filter;
+    opacity 0.45s ease,
+    transform 0.45s ease;
 }
 
 .beat--left {
@@ -180,7 +172,6 @@
 .beat.is-active {
   opacity: 1;
   transform: translateY(-50%) translateY(0);
-  filter: blur(0);
 }
 
 .beat__label {
