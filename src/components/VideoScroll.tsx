@@ -6,8 +6,20 @@ import { useGSAP } from '@gsap/react'
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 const FRAME_COUNT = 240
-const frameSrc = (index: number) =>
-  `/media/sequence/frame-${String(index + 1).padStart(3, '0')}.jpg`
+
+type Variant = 'landscape' | 'portrait'
+
+function getVariant(): Variant {
+  // Phones / small vertical viewports get the 9:16 cut
+  const narrow = window.matchMedia('(max-width: 900px)').matches
+  const tall = window.innerHeight >= window.innerWidth
+  return narrow && tall ? 'portrait' : 'landscape'
+}
+
+function frameSrc(variant: Variant, index: number) {
+  const folder = variant === 'portrait' ? 'sequence-portrait' : 'sequence'
+  return `/media/${folder}/frame-${String(index + 1).padStart(3, '0')}.jpg`
+}
 
 function drawCover(
   ctx: CanvasRenderingContext2D,
@@ -24,31 +36,26 @@ function drawCover(
   ctx.drawImage(img, (width - dw) / 2, (height - dh) / 2, dw, dh)
 }
 
-export function VideoScroll() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const framesRef = useRef<(HTMLImageElement | null)[]>([])
-  const drawnFrameRef = useRef(-1)
-  const [ready, setReady] = useState(false)
-  const [loadPct, setLoadPct] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
+function loadFrames(
+  variant: Variant,
+  onProgress: (pct: number) => void,
+  signal: { cancelled: boolean },
+) {
+  return new Promise<(HTMLImageElement | null)[]>((resolve) => {
     const frames: (HTMLImageElement | null)[] = Array(FRAME_COUNT).fill(null)
-    framesRef.current = frames
-
     let loaded = 0
+
     const bump = () => {
       loaded += 1
-      if (cancelled) return
-      setLoadPct(Math.round((loaded / FRAME_COUNT) * 100))
-      if (loaded >= FRAME_COUNT) setReady(true)
+      if (signal.cancelled) return
+      onProgress(Math.round((loaded / FRAME_COUNT) * 100))
+      if (loaded >= FRAME_COUNT) resolve(frames)
     }
 
     for (let i = 0; i < FRAME_COUNT; i++) {
       const img = new Image()
       img.decoding = 'async'
-      img.src = frameSrc(i)
+      img.src = frameSrc(variant, i)
       const done = () => {
         frames[i] = img
         bump()
@@ -59,11 +66,59 @@ export function VideoScroll() {
       }
       img.onerror = () => bump()
     }
+  })
+}
+
+export function VideoScroll() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const framesRef = useRef<(HTMLImageElement | null)[]>([])
+  const drawnFrameRef = useRef(-1)
+  const [variant, setVariant] = useState<Variant>(() =>
+    typeof window !== 'undefined' ? getVariant() : 'landscape',
+  )
+  const [ready, setReady] = useState(false)
+  const [loadPct, setLoadPct] = useState(0)
+
+  useEffect(() => {
+    const syncVariant = () => {
+      const next = getVariant()
+      setVariant((prev) => (prev === next ? prev : next))
+    }
+
+    syncVariant()
+    const mqWidth = window.matchMedia('(max-width: 900px)')
+    const mqOrient = window.matchMedia('(orientation: portrait)')
+    mqWidth.addEventListener('change', syncVariant)
+    mqOrient.addEventListener('change', syncVariant)
+    window.addEventListener('resize', syncVariant)
+    window.addEventListener('orientationchange', syncVariant)
 
     return () => {
-      cancelled = true
+      mqWidth.removeEventListener('change', syncVariant)
+      mqOrient.removeEventListener('change', syncVariant)
+      window.removeEventListener('resize', syncVariant)
+      window.removeEventListener('orientationchange', syncVariant)
     }
   }, [])
+
+  useEffect(() => {
+    const signal = { cancelled: false }
+    setReady(false)
+    setLoadPct(0)
+    framesRef.current = []
+    drawnFrameRef.current = -1
+
+    loadFrames(variant, setLoadPct, signal).then((frames) => {
+      if (signal.cancelled) return
+      framesRef.current = frames
+      setReady(true)
+    })
+
+    return () => {
+      signal.cancelled = true
+    }
+  }, [variant])
 
   useGSAP(
     () => {
@@ -102,9 +157,7 @@ export function VideoScroll() {
         drawnFrameRef.current = idx
       }
 
-      // Slightly denser scrub on phones so the sequence isn't endless
-      const isNarrow = window.matchMedia('(max-width: 768px)').matches
-      const pxPerFrame = isNarrow ? 8 : 11
+      const pxPerFrame = variant === 'portrait' ? 8 : 11
       const st = ScrollTrigger.create({
         trigger: section,
         start: 'top top',
@@ -120,6 +173,7 @@ export function VideoScroll() {
 
       resize()
       paint(0)
+      ScrollTrigger.refresh()
 
       const onResize = () => {
         resize()
@@ -135,7 +189,7 @@ export function VideoScroll() {
         st.kill()
       }
     },
-    { dependencies: [ready], scope: sectionRef },
+    { dependencies: [ready, variant], scope: sectionRef },
   )
 
   return (
