@@ -1,0 +1,67 @@
+:root {
+  --ink: #151716;
+  --ink-soft: #3a3f3c;
+  --paper: #f3efe8;
+  --paper-deep: #e7e1d6;
+  --wood: #b08955;
+  --wood-deep: #8a6a3f;
+  --pool: #4f7f86;
+  --line: rgba(21, 23, 22, 0.12);
+  --white: #faf8f4;
+  --shadow: 0 24px 60px rgba(21, 23, 22, 0.12);
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(176, 137, 85, 0.14), transparent 55%),
+    radial-gradient(900px 600px at 100% 0%, rgba(79, 127, 134, 0.12), transparent 50%),
+    linear-gradient(180deg, #ebe6dc 0%, var(--paper) 40%, #e9e4da 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
