@@ -4,7 +4,182 @@
   overflow-x: clip;
 }
 
-/* ——— Video scroll opener ——— */
+/* ——— Dedicated mobile scroller (no GSAP pin) ——— */
+
+.mobile-scroll {
+  position: relative;
+  width: 100%;
+  /* Track height set inline; creates scroll room under the fixed stage */
+}
+
+.mobile-scroll__stage {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  height: 100svh;
+  background: #0c0e0d;
+  overflow: hidden;
+  color: #faf8f4;
+  /* Never let the cream site show through while scrubbing */
+  transition: opacity 0.2s linear;
+}
+
+.mobile-scroll__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #0c0e0d;
+}
+
+.mobile-scroll__loader {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-content: center;
+  background: #0c0e0d;
+}
+
+.mobile-scroll__loader p {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.mobile-scroll__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 10, 9, 0.4) 0%,
+    transparent 28%,
+    transparent 55%,
+    rgba(8, 10, 9, 0.55) 100%
+  );
+}
+
+.mobile-scroll__hero {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.25rem
+    calc(2rem + env(safe-area-inset-bottom, 0px));
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+  pointer-events: none;
+}
+
+.mobile-scroll__hero.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mobile-scroll__brand {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 11vw, 3.4rem);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  line-height: 0.95;
+  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-scroll__line {
+  margin: 0;
+  max-width: 14ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 5vw, 1.55rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.25;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-scroll__support {
+  margin: 0.85rem 0 0;
+  max-width: 26ch;
+  font-size: 0.9rem;
+  font-weight: 300;
+  opacity: 0.85;
+}
+
+.mobile-scroll__hint {
+  position: absolute;
+  bottom: calc(1.6rem + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.mobile-scroll__hint-line {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(180deg, rgba(250, 248, 244, 0.85), transparent);
+  animation: hintPulse 1.8s ease-in-out infinite;
+  transform-origin: top;
+}
+
+.mobile-scroll__beats {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mobile-scroll__beat {
+  position: absolute;
+  left: 1.25rem;
+  right: 1.25rem;
+  bottom: calc(2.2rem + env(safe-area-inset-bottom, 0px));
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.45s ease;
+}
+
+.mobile-scroll__beat.is-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mobile-scroll__beat-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--wood);
+}
+
+.mobile-scroll__beat-text {
+  margin: 0;
+  max-width: 22ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 5vw, 1.45rem);
+  font-weight: 400;
+  line-height: 1.3;
+  text-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+}
+
+/* ——— Desktop video scroll opener ——— */
 
 .video-scroll {
   position: relative;
