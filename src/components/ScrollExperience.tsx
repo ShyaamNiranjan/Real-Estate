@@ -7,6 +7,8 @@ const STAGE_BG = '#0c0e0d'
 const HERO_UNTIL = 0.04
 const BEATS_UNTIL = 0.95
 const COMPLETE_AT = 0.999
+/** First ~2–3 scroll gestures hold on the AURELIA hero with zero camera movement. */
+const HOLD_VIEWPORTS = 0.7
 
 const SEQUENCES: Record<Variant, { dir: string; frames: number; pxPerFrame: number }> = {
   landscape: { dir: '/media/sequence', frames: 240, pxPerFrame: 12 },
@@ -222,7 +224,12 @@ export function ScrollExperience() {
       sizeCanvas()
       const maxScroll = Math.max(1, track.offsetHeight - window.innerHeight)
       alignEnd(maxScroll)
-      const progress = Math.min(1, Math.max(0, window.scrollY / maxScroll))
+
+      const raw = Math.min(1, Math.max(0, window.scrollY / maxScroll))
+      // Dead-zone at the start: first ~2–3 scrolls keep frame 0 + hero locked
+      const holdRatio = Math.min(0.32, (window.innerHeight * HOLD_VIEWPORTS) / maxScroll)
+      const progress =
+        raw <= holdRatio ? 0 : Math.min(1, (raw - holdRatio) / (1 - holdRatio))
 
       const done = progress >= COMPLETE_AT
       if (done !== complete) {
