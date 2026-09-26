@@ -1,0 +1,297 @@
+.experience {
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow-x: clip;
+}
+
+/* --- Scroll experience: tall track + fixed stage (no pinning) --- */
+
+.scroll-track {
+  position: relative;
+  width: 100%;
+  background: #0c0e0d;
+  /* height set inline: frames x px-per-frame + 100svh */
+}
+
+.scroll-track__end {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  background: #0c0e0d;
+}
+
+.scroll-track__end img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scroll-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  /* lvh: stays full-bleed when the mobile URL bar collapses, so no strip ever peeks */
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  background: #0c0e0d;
+  color: var(--white);
+  pointer-events: none;
+  contain: strict;
+  transition: opacity 0.3s ease, visibility 0s linear 0s;
+}
+
+.scroll-stage.is-complete {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.scroll-stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #0c0e0d;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.scroll-stage.is-ready .scroll-stage__canvas {
+  opacity: 1;
+}
+
+.scroll-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(8, 10, 9, 0.5) 0%, rgba(8, 10, 9, 0.06) 30%, rgba(8, 10, 9, 0.06) 70%, rgba(8, 10, 9, 0.5) 100%),
+    linear-gradient(180deg, rgba(8, 10, 9, 0.3) 0%, transparent 24%, transparent 68%, rgba(8, 10, 9, 0.45) 100%);
+}
+
+/* Overlay layer sized to the *small* viewport so bottom copy clears mobile browser chrome */
+.scroll-stage__ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100svh;
+}
+
+.scroll-hero {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: calc(1.5rem + var(--safe-top)) var(--pad-x) calc(2rem + var(--safe-bottom));
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.scroll-hero.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-hero__brand {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 9vw, 6rem);
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  line-height: 0.95;
+  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+.scroll-hero__line {
+  margin: 0;
+  max-width: 22ch;
+  text-wrap: balance;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 3.4vw, 2rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.scroll-hero__support {
+  margin: 0.9rem 0 0;
+  max-width: 28ch;
+  font-size: clamp(0.88rem, 2.4vw, 0.98rem);
+  font-weight: 300;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+
+.scroll-hero__hint {
+  position: absolute;
+  bottom: calc(1.8rem + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.scroll-hero__hint-line {
+  width: 1px;
+  height: 38px;
+  background: linear-gradient(180deg, rgba(250, 248, 244, 0.85), transparent);
+  animation: hintPulse 1.8s ease-in-out infinite;
+  transform-origin: top;
+}
+
+@keyframes hintPulse {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.scroll-beats {
+  position: absolute;
+  inset: 0;
+}
+
+.beat {
+  position: absolute;
+  top: 50%;
+  width: min(300px, 32vw);
+  padding: 0.25rem;
+  opacity: 0;
+  transform: translateY(-50%) translateY(12px);
+  transition: opacity 0.5s ease, transform 0.6s ease;
+}
+
+.beat--left {
+  left: calc(var(--pad-x) + var(--safe-left));
+  text-align: left;
+}
+
+.beat--right {
+  right: calc(var(--pad-x) + var(--safe-right));
+  text-align: right;
+}
+
+.beat.is-active {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+.beat__label {
+  margin: 0 0 0.45rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #c9a36e;
+}
+
+.beat__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.3vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.3;
+  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.scroll-loader {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(250, 248, 244, 0.08);
+  transition: opacity 0.6s ease 0.2s;
+}
+
+.scroll-loader__bar {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s linear;
+}
+
+.scroll-stage.is-loaded .scroll-loader {
+  opacity: 0;
+}
+
+/* Portrait phones / narrow screens: beats sit bottom-left */
+@media (max-width: 900px) and (orientation: portrait), (max-width: 640px) {
+  .scroll-veil {
+    background: linear-gradient(
+      180deg,
+      rgba(8, 10, 9, 0.42) 0%,
+      transparent 28%,
+      transparent 52%,
+      rgba(8, 10, 9, 0.62) 100%
+    );
+  }
+
+  .scroll-hero__brand {
+    font-size: clamp(2.2rem, 11vw, 3.4rem);
+    letter-spacing: 0.18em;
+    text-indent: 0.18em;
+  }
+
+  .beat,
+  .beat--left,
+  .beat--right {
+    top: auto;
+    left: calc(1.25rem + var(--safe-left));
+    right: calc(1.25rem + var(--safe-right));
+    bottom: calc(2.4rem + var(--safe-bottom));
+    width: auto;
+    text-align: left;
+    transform: translateY(10px);
+  }
+
+  .beat.is-active {
+    transform: translateY(0);
+  }
+
+  .beat__text {
+    max-width: 22ch;
+    font-size: clamp(1.2rem, 5.2vw, 1.5rem);
+  }
+}
+
+/* Short landscape phones: keep side beats compact */
+@media (orientation: landscape) and (max-height: 500px) {
+  .scroll-hero__brand {
+    font-size: clamp(2rem, 7vw, 3rem);
+  }
+
+  .scroll-hero__hint {
+    display: none;
+  }
+
+  .beat__text {
+    font-size: clamp(1rem, 2.4vw, 1.3rem);
+  }
+}
+

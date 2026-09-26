@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { copy } from '../content/copy'
+import { expandFramePattern, joinUrl } from '../lib/format'
+import type { ExperienceHero, FrameSequence, ScrollBeat } from '../types/content'
 
 type Variant = 'landscape' | 'portrait'
 
@@ -7,12 +8,16 @@ const STAGE_BG = '#0c0e0d'
 const HERO_UNTIL = 0.04
 const BEATS_UNTIL = 0.95
 const COMPLETE_AT = 0.999
-/** First ~2–3 scroll gestures hold on the AURELIA hero with zero camera movement. */
+/** First ~2–3 scroll gestures hold on the hero with zero camera movement. */
 const HOLD_VIEWPORTS = 0.7
+/** Scroll distance of the whole walkthrough, independent of how many frames a listing has. */
+const TRACK_PX: Record<Variant, number> = { landscape: 2880, portrait: 2640 }
 
-const SEQUENCES: Record<Variant, { dir: string; frames: number; pxPerFrame: number }> = {
-  landscape: { dir: '/media/sequence', frames: 240, pxPerFrame: 12 },
-  portrait: { dir: '/media/sequence-portrait-lite', frames: 120, pxPerFrame: 22 },
+type Props = {
+  sequences: Partial<Record<Variant, FrameSequence>>
+  hero: ExperienceHero
+  beats: ScrollBeat[]
+  label: string
 }
 
 function getVariant(): Variant {
@@ -21,8 +26,8 @@ function getVariant(): Variant {
   return w > h || w > 900 ? 'landscape' : 'portrait'
 }
 
-function frameSrc(variant: Variant, index: number) {
-  return `${SEQUENCES[variant].dir}/frame-${String(index + 1).padStart(3, '0')}.jpg`
+function frameSrc(seq: FrameSequence, index: number) {
+  return joinUrl(seq.baseUrl, expandFramePattern(seq.pattern, index + 1))
 }
 
 /** Coarse-to-fine order so the whole timeline is scrubbable before every frame lands. */
@@ -51,7 +56,7 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: numb
   ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
 }
 
-export function ScrollExperience() {
+export function ScrollExperience({ sequences, hero, beats, label }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -65,7 +70,14 @@ export function ScrollExperience() {
     typeof window === 'undefined' ? 'landscape' : getVariant(),
   )
 
-  const { frames: total, pxPerFrame } = SEQUENCES[variant]
+  const seq = (variant === 'portrait' ? sequences.portrait ?? sequences.landscape : sequences.landscape ?? sequences.portrait)!
+  const total = Math.max(1, seq.frameCount)
+  const pxPerFrame = seq.pxPerFrame ?? Math.min(40, Math.max(6, TRACK_PX[variant] / total))
+  const seqKey = `${seq.baseUrl}|${seq.pattern}|${total}`
+  const seqRef = useRef(seq)
+  seqRef.current = seq
+  const beatsRef = useRef(beats)
+  beatsRef.current = beats
 
   useEffect(() => {
     const sync = () => {
@@ -98,7 +110,7 @@ export function ScrollExperience() {
       const index = order[cursor++]
       const img = new Image()
       img.decoding = 'async'
-      img.src = frameSrc(variant, index)
+      img.src = frameSrc(seqRef.current, index)
 
       const finish = (ok: boolean) => {
         if (cancelled) return
@@ -129,7 +141,7 @@ export function ScrollExperience() {
         if (img) img.src = ''
       })
     }
-  }, [variant, total])
+  }, [seqKey, total])
 
   // Scroll → frame. Passive listener schedules at most one rAF; all updates are imperative.
   useEffect(() => {
@@ -196,7 +208,7 @@ export function ScrollExperience() {
 
       let beat = -1
       if (progress >= HERO_UNTIL && progress < BEATS_UNTIL) {
-        copy.scrollBeats.forEach((b, i) => {
+        beatsRef.current.forEach((b, i) => {
           if (progress >= b.at) beat = i
         })
       }
@@ -257,19 +269,19 @@ export function ScrollExperience() {
       if (raf) cancelAnimationFrame(raf)
       requestPaintRef.current = () => {}
     }
-  }, [variant, total])
+  }, [seqKey, total])
 
   return (
     <div
       className="scroll-track"
       ref={trackRef}
       style={{ height: `calc(${total * pxPerFrame}px + 100svh)` }}
-      aria-label="AURELIA walkthrough"
+      aria-label={label}
     >
       {/* Positioned (in JS) exactly where the viewport sits at max scroll, sized like the
           stage, so fading the fixed stage out is invisible and the scene scrolls away with the page. */}
       <div className="scroll-track__end" ref={endRef} aria-hidden>
-        <img src={frameSrc(variant, total - 1)} alt="" decoding="async" />
+        <img src={frameSrc(seq, total - 1)} alt="" decoding="async" />
         <div className="scroll-veil" />
       </div>
 
@@ -279,17 +291,17 @@ export function ScrollExperience() {
 
         <div className="scroll-stage__ui">
           <div className="scroll-hero" ref={heroRef}>
-            <p className="scroll-hero__brand">{copy.hero.brand}</p>
-            <h1 className="scroll-hero__line">{copy.hero.line}</h1>
-            <p className="scroll-hero__support">{copy.hero.support}</p>
+            {hero.brand && <p className="scroll-hero__brand">{hero.brand}</p>}
+            {hero.line && <h1 className="scroll-hero__line">{hero.line}</h1>}
+            {hero.support && <p className="scroll-hero__support">{hero.support}</p>}
             <div className="scroll-hero__hint">
-              <span>{copy.hero.scrollHint}</span>
+              <span>{hero.scrollHint ?? 'Scroll to enter'}</span>
               <span className="scroll-hero__hint-line" />
             </div>
           </div>
 
           <div className="scroll-beats">
-            {copy.scrollBeats.map((beat, i) => (
+            {beats.map((beat, i) => (
               <aside
                 key={beat.id}
                 ref={(el) => {
