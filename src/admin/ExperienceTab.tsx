@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { expandFramePattern, joinUrl } from '../lib/format'
-import { asObject, type ExperienceConfig, type ScrollBeat } from '../types/content'
+import { asMobileMode, asObject, type ExperienceConfig, type MobileMode, type ScrollBeat } from '../types/content'
 import type { Json, ListingMediaRow, ListingRow, MediaAspect } from '../types/database'
 import { createMedia, deleteMedia, updateListing, updateMedia, uploadFrameSequence } from './api'
 import type { EditorData } from './ListingEditor'
@@ -27,9 +27,12 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
   const initial = useMemo(() => asObject<ExperienceConfig>(listing.experience), [listing.experience])
   const [hero, setHero] = useState(initial.hero ?? {})
   const [beats, setBeats] = useState<ScrollBeat[]>(() => [...(initial.beats ?? [])].sort((a, b) => a.at - b.at))
+  const [mobileMode, setMobileMode] = useState<MobileMode>(() => asMobileMode(initial.mobile_mode))
   const [saving, setSaving] = useState(false)
 
-  const dirty = JSON.stringify({ hero, beats }) !== JSON.stringify({ hero: initial.hero ?? {}, beats: [...(initial.beats ?? [])].sort((a, b) => a.at - b.at) })
+  const dirty =
+    JSON.stringify({ hero, beats, mobileMode }) !==
+    JSON.stringify({ hero: initial.hero ?? {}, beats: [...(initial.beats ?? [])].sort((a, b) => a.at - b.at), mobileMode: asMobileMode(initial.mobile_mode) })
   useUnsavedGuard(dirty)
 
   const save = async () => {
@@ -40,7 +43,7 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
         .filter((b) => b.text.trim())
         .map((b) => ({ ...b, at: Math.min(0.94, Math.max(0.04, Number(b.at) || 0.05)) }))
         .sort((a, b) => a.at - b.at)
-      const experience = { ...asObject<Record<string, Json>>(listing.experience), hero, beats: clean } as unknown as Json
+      const experience = { ...asObject<Record<string, Json>>(listing.experience), hero, beats: clean, mobile_mode: mobileMode } as unknown as Json
       const saved = await updateListing(listing.id, { experience })
       onListing(saved)
       setBeats(clean)
@@ -156,6 +159,15 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
             <Field label="Scroll hint">
               {(id) => (
                 <input id={id} className="a-input" value={hero.scrollHint ?? ''} onChange={(e) => setHero({ ...hero, scrollHint: e.target.value })} placeholder="Scroll to enter" />
+              )}
+            </Field>
+            <Field label="On phones" hint="Used when a phone is upright and there is no portrait sequence.">
+              {(id) => (
+                <select id={id} className="a-input" value={mobileMode} onChange={(e) => setMobileMode(asMobileMode(e.target.value))}>
+                  <option value="rotate">Rotate for landscape (recommended)</option>
+                  <option value="fit">Fit with bars</option>
+                  <option value="fill">Fill screen (crops sides)</option>
+                </select>
               )}
             </Field>
           </div>

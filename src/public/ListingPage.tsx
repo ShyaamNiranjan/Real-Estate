@@ -5,7 +5,7 @@ import { fetchListingBySlug } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { listingFacts } from '../lib/format'
 import { useDocumentTitle } from '../lib/site'
-import { asObject, type ExperienceConfig, type FrameSequence, type ListingWithRelations } from '../types/content'
+import { asMobileMode, asObject, type ExperienceConfig, type FrameSequence, type ListingWithRelations } from '../types/content'
 import type { ListingMediaRow } from '../types/database'
 import { EnquiryForm } from './EnquiryForm'
 import { NotFound } from './NotFound'
@@ -121,6 +121,7 @@ function Listing({ listing }: { listing: ListingWithRelations }) {
             scrollHint: experience.hero?.scrollHint ?? 'Scroll to enter',
           }}
           beats={beats}
+          mobileMode={asMobileMode(experience.mobile_mode)}
         />
       ) : (
         <PhotoHero listing={listing} cover={cover} />

@@ -24,6 +24,11 @@
   background: #0c0e0d;
 }
 
+.scroll-track__frame {
+  position: absolute;
+  inset: 0;
+}
+
 .scroll-track__end img {
   width: 100%;
   height: 100%;
@@ -102,6 +107,11 @@
 .scroll-hero.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Only takes part in layout in fit mode, where the copy moves into the bar above the video */
+.scroll-hero__copy {
+  display: contents;
 }
 
 .scroll-hero__brand {
@@ -292,6 +302,328 @@
 
   .beat__text {
     font-size: clamp(1rem, 2.4vw, 1.3rem);
+  }
+}
+
+/* --- Rotate mode: upright phone, landscape walkthrough turned 90deg clockwise ---
+   Reads upright once the phone is tilted top-to-the-left. Everything below mirrors the
+   short-landscape layout above, sized off the stage (--stage-w) instead of vw. */
+
+.scroll-track.is-rotated {
+  touch-action: pan-y;
+}
+
+.scroll-track.is-rotated .scroll-stage,
+.scroll-track.is-rotated .scroll-track__frame {
+  --stage-w: var(--rot-w, 100dvh);
+  --stage-h: var(--rot-h, 100vw);
+  /* The phone's top edge is the stage's left edge, its bottom edge the stage's right */
+  --safe-top: env(safe-area-inset-right, 0px);
+  --safe-right: env(safe-area-inset-bottom, 0px);
+  --safe-bottom: env(safe-area-inset-left, 0px);
+  --safe-left: env(safe-area-inset-top, 0px);
+  --pad-x: clamp(1.15rem, calc(var(--stage-w) * 0.045), 4rem);
+  inset: auto;
+  top: 0;
+  left: 100%;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  transform: rotate(90deg);
+  transform-origin: 0 0;
+}
+
+.scroll-track.is-rotated .scroll-stage__ui {
+  height: 100%;
+}
+
+.scroll-track.is-rotated .scroll-veil {
+  background:
+    linear-gradient(90deg, rgba(8, 10, 9, 0.5) 0%, rgba(8, 10, 9, 0.06) 30%, rgba(8, 10, 9, 0.06) 70%, rgba(8, 10, 9, 0.5) 100%),
+    linear-gradient(180deg, rgba(8, 10, 9, 0.3) 0%, transparent 24%, transparent 68%, rgba(8, 10, 9, 0.45) 100%);
+}
+
+.scroll-track.is-rotated .scroll-hero__brand {
+  font-size: clamp(2rem, calc(var(--stage-w) * 0.07), 3rem);
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+}
+
+.scroll-track.is-rotated .scroll-hero__line {
+  font-size: clamp(1.1rem, calc(var(--stage-w) * 0.03), 1.7rem);
+}
+
+.scroll-track.is-rotated .scroll-hero__support {
+  font-size: clamp(0.82rem, calc(var(--stage-w) * 0.022), 0.98rem);
+}
+
+.scroll-track.is-rotated .scroll-hero__hint {
+  display: none;
+}
+
+.scroll-track.is-rotated .beat {
+  top: 50%;
+  bottom: auto;
+  width: min(300px, calc(var(--stage-w) * 0.32));
+  transform: translateY(-50%) translateY(12px);
+}
+
+.scroll-track.is-rotated .beat.is-active {
+  transform: translateY(-50%);
+}
+
+.scroll-track.is-rotated .beat--left {
+  left: calc(var(--pad-x) + var(--safe-left));
+  right: auto;
+  text-align: left;
+}
+
+.scroll-track.is-rotated .beat--right {
+  left: auto;
+  right: calc(var(--pad-x) + var(--safe-right));
+  text-align: right;
+}
+
+.scroll-track.is-rotated .beat__text {
+  max-width: none;
+  font-size: clamp(1rem, calc(var(--stage-w) * 0.024), 1.3rem);
+}
+
+/* The page header would sit sideways across the rotated scene */
+html.stage-rotated .site-header,
+html.stage-rotated .preview-bar {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+/* Rotate-mode cues */
+
+.scroll-cue {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(250, 248, 244, 0.82);
+  pointer-events: none;
+}
+
+.scroll-cue__icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  stroke: var(--gold);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scroll-cue__arc {
+  opacity: 0.6;
+}
+
+.scroll-cue__phone {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.scroll-cue--turn {
+  top: calc(1.1rem + var(--safe-top));
+}
+
+.scroll-cue__icon--turn .scroll-cue__phone {
+  animation: cueTurn 3.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes cueTurn {
+  0%,
+  25% {
+    transform: rotate(0deg);
+  }
+  50%,
+  80% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.scroll-cue--upright {
+  bottom: calc(1.1rem + var(--safe-bottom));
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.scroll-stage.is-ending .scroll-cue--upright,
+.scroll-track__frame .scroll-cue--upright {
+  opacity: 1;
+}
+
+.scroll-cue__phone--upright {
+  animation: cueNudge 3.2s ease-in-out infinite;
+}
+
+@keyframes cueNudge {
+  0%,
+  55%,
+  100% {
+    transform: rotate(0deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+.scroll-swipe {
+  position: absolute;
+  left: 50%;
+  bottom: calc(1.1rem + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.scroll-stage.is-ready:not(.has-swiped):not(.is-complete) .scroll-swipe {
+  opacity: 1;
+  transition-delay: 0.4s;
+}
+
+.scroll-swipe__trail {
+  position: relative;
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(0deg, rgba(250, 248, 244, 0), rgba(250, 248, 244, 0.4));
+}
+
+.scroll-swipe__trail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-top: 1px solid var(--gold);
+  border-left: 1px solid var(--gold);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.scroll-swipe__dot {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 10px rgba(196, 165, 116, 0.75);
+  animation: swipeTrail 2.2s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+@keyframes swipeTrail {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(-28px);
+    opacity: 1;
+  }
+  85%,
+  100% {
+    transform: translateY(-28px);
+    opacity: 0;
+  }
+}
+
+.scroll-swipe__label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(250, 248, 244, 0.82);
+}
+
+/* --- Fit mode: whole landscape frame letterboxed on an upright phone ---
+   The copy moves into the bars; --band-top / --band-h are set in JS from the frame's aspect. */
+
+.scroll-track.is-fit .scroll-veil {
+  display: none;
+}
+
+.scroll-track.is-fit .scroll-track__end img {
+  object-fit: contain;
+  object-position: 50% 56%;
+}
+
+.scroll-track.is-fit .scroll-hero {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.scroll-track.is-fit .scroll-hero__copy {
+  position: absolute;
+  left: calc(var(--pad-x) + var(--safe-left));
+  right: calc(var(--pad-x) + var(--safe-right));
+  bottom: calc(100% - var(--band-top, 30%));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: clamp(1.1rem, 4.5vw, 1.8rem);
+}
+
+.scroll-track.is-fit .scroll-hero__brand {
+  margin-bottom: 0.6rem;
+  font-size: clamp(1.9rem, 9vw, 2.8rem);
+}
+
+.scroll-track.is-fit .scroll-hero__support {
+  margin-top: 0.6rem;
+}
+
+.scroll-track.is-fit .scroll-hero__hint {
+  top: calc(var(--band-top, 30%) + var(--band-h, 40%) + 1.8rem);
+  bottom: auto;
+}
+
+.scroll-track.is-fit .beat,
+.scroll-track.is-fit .beat--left,
+.scroll-track.is-fit .beat--right {
+  top: calc(var(--band-top, 30%) + var(--band-h, 40%) + 1.6rem);
+  bottom: auto;
+  left: calc(1.25rem + var(--safe-left));
+  right: calc(1.25rem + var(--safe-right));
+  width: auto;
+  text-align: left;
+  transform: translateY(10px);
+}
+
+.scroll-track.is-fit .beat.is-active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue__phone,
+  .scroll-swipe__dot {
+    animation: none;
   }
 }
 

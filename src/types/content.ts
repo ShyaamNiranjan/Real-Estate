@@ -38,9 +38,19 @@ export type ExperienceHero = {
   scrollHint?: string
 }
 
+/** How a landscape-only walkthrough is presented on a portrait phone. */
+export type MobileMode = 'rotate' | 'fit' | 'fill'
+
+export const MOBILE_MODES: readonly MobileMode[] = ['rotate', 'fit', 'fill']
+
+export function asMobileMode(value: unknown): MobileMode {
+  return MOBILE_MODES.includes(value as MobileMode) ? (value as MobileMode) : 'rotate'
+}
+
 export type ExperienceConfig = {
   hero?: ExperienceHero
   beats?: ScrollBeat[]
+  mobile_mode?: MobileMode
 }
 
 export type FrameSequence = {
