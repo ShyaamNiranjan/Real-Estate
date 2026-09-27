@@ -292,6 +292,13 @@
   display: flex;
   gap: 1.5rem;
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.a-tabs::-webkit-scrollbar,
+.a-subnav::-webkit-scrollbar {
+  display: none;
 }
 
 .a-tab,
@@ -333,6 +340,8 @@
   margin-bottom: 1.4rem;
   border-bottom: 1px solid var(--a-line);
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
 
 .a-search {
