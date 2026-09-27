@@ -309,7 +309,8 @@
    Reads upright once the phone is tilted top-to-the-left. Everything below mirrors the
    short-landscape layout above, sized off the stage (--stage-w) instead of vw. */
 
-.scroll-track.is-rotated {
+/* No pinch-zoom over any walkthrough: zooming a fixed, scroll-scrubbed stage jumps and desyncs progress */
+.scroll-track {
   touch-action: pan-y;
 }
 
