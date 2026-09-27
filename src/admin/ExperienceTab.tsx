@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { expandFramePattern, joinUrl } from '../lib/format'
 import { asObject, type ExperienceConfig, type ScrollBeat } from '../types/content'
 import type { Json, ListingMediaRow, ListingRow, MediaAspect } from '../types/database'
 import { createMedia, deleteMedia, updateListing, updateMedia, uploadFrameSequence } from './api'
 import type { EditorData } from './ListingEditor'
+import { VIDEO_PRESETS, extractFrames, probeVideo } from './videoFrames'
 import { ConfirmButton, Field, Kbd, errorMessage, isMac, useSaveShortcut, useToast, useUnsavedGuard } from './ui'
 
 type Props = {
@@ -57,7 +58,7 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
   return (
     <div className="a-editor">
       <div className="a-editor__main">
-        <Sequences data={data} setMedia={setMedia} />
+        <Sequences data={data} setMedia={setMedia} onListing={onListing} />
 
         <section className="a-card">
           <div className="a-card__head">
@@ -175,7 +176,15 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
 
 // Frame sequences ------------------------------------------------------------
 
-function Sequences({ data, setMedia }: { data: EditorData; setMedia: Props['setMedia'] }) {
+type VideoJob = { phase: 'reading' | 'extracting' | 'uploading'; done: number; total: number }
+
+function videoLabel(job: VideoJob) {
+  if (job.phase === 'reading') return 'Reading video…'
+  const pct = job.total ? Math.round((job.done / job.total) * 100) : 0
+  return job.phase === 'extracting' ? `Extracting frames · ${pct}%` : `Uploading · ${pct}%`
+}
+
+function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: Props['setMedia']; onListing: Props['onListing'] }) {
   const toast = useToast()
   const { listing, media } = data
   const sequences = media.filter((m) => m.kind === 'frame_sequence')
@@ -200,28 +209,66 @@ function Sequences({ data, setMedia }: { data: EditorData; setMedia: Props['setM
     }
   }
 
+  const [videoJob, setVideoJob] = useState<VideoJob | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const busy = Boolean(progress || videoJob)
+
+  /** New sequences go first so they win over any older sequence with the same aspect on the public page. */
+  const saveSequence = async (res: Awaited<ReturnType<typeof uploadFrameSequence>>, aspect: MediaAspect, label: string) => {
+    const row = await createMedia({
+      listing_id: listing.id,
+      kind: 'frame_sequence',
+      storage_path: res.prefix,
+      public_url: res.baseUrl,
+      frame_count: res.count,
+      frame_pattern: res.pattern,
+      aspect,
+      label,
+      sort_order: Math.min(0, ...sequences.map((s) => s.sort_order)) - 1,
+    })
+    setMedia((m) => [row, ...m])
+    if (listing.experience_type !== 'immersive') onListing(await updateListing(listing.id, { experience_type: 'immersive' }))
+  }
+
   const uploadFrames = async (files: File[]) => {
     if (!files.length) return
     setProgress({ done: 0, total: files.length })
     try {
       const res = await uploadFrameSequence(listing.id, files, (done, total) => setProgress({ done, total }))
-      const row = await createMedia({
-        listing_id: listing.id,
-        kind: 'frame_sequence',
-        storage_path: res.prefix,
-        public_url: res.baseUrl,
-        frame_count: res.count,
-        frame_pattern: res.pattern,
-        aspect: uploadAspect,
-        label: `Uploaded ${uploadAspect} sequence`,
-        sort_order: sequences.length,
-      })
-      setMedia((m) => [...m, row])
+      await saveSequence(res, uploadAspect, `Uploaded ${uploadAspect} sequence`)
       toast(`${res.count} frames uploaded`)
     } catch (err) {
       toast(errorMessage(err), 'error')
     } finally {
       setProgress(null)
+    }
+  }
+
+  const uploadVideo = async (file: File) => {
+    const controller = new AbortController()
+    abortRef.current = controller
+    setVideoJob({ phase: 'reading', done: 0, total: 0 })
+    try {
+      const info = await probeVideo(file)
+      const aspect: MediaAspect = info.aspect === 'square' ? 'landscape' : info.aspect
+      const preset = VIDEO_PRESETS[aspect]
+      const frames = await extractFrames(
+        file,
+        { count: preset.frames, maxWidth: preset.width, quality: preset.quality },
+        (done, total) => setVideoJob({ phase: 'extracting', done, total }),
+        controller.signal,
+      )
+      if (controller.signal.aborted) throw new DOMException('Cancelled', 'AbortError')
+      setVideoJob({ phase: 'uploading', done: 0, total: frames.length })
+      const res = await uploadFrameSequence(listing.id, frames, (done, total) => setVideoJob({ phase: 'uploading', done, total }))
+      await saveSequence(res, aspect, `${file.name} · ${aspect}`)
+      toast(`Walkthrough ready — ${res.count} ${aspect} frames`)
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') toast('Video upload cancelled')
+      else toast(errorMessage(err), 'error')
+    } finally {
+      abortRef.current = null
+      setVideoJob(null)
     }
   }
 
@@ -249,6 +296,41 @@ function Sequences({ data, setMedia }: { data: EditorData; setMedia: Props['setM
 
       <div className="a-upload-frames">
         <div>
+          <h3 className="a-card__subtitle">Upload a video</h3>
+          <p className="a-muted">
+            MP4 or WebM. The walkthrough frames are extracted in your browser, then uploaded — keep this tab open until it finishes. Wide videos become the
+            desktop sequence, tall phone videos the mobile one; either works on both if it is the only one.
+          </p>
+        </div>
+        <div className="a-inline-form">
+          <label className={`a-btn a-btn--primary a-file${busy ? ' is-disabled' : ''}`}>
+            {videoJob ? videoLabel(videoJob) : 'Choose video'}
+            <input
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
+              disabled={busy}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) void uploadVideo(file)
+              }}
+            />
+          </label>
+          {videoJob && (
+            <button type="button" className="a-link" onClick={() => abortRef.current?.abort()}>
+              Cancel
+            </button>
+          )}
+        </div>
+        {videoJob && videoJob.total > 0 && (
+          <div className="a-progress" aria-hidden>
+            <span style={{ transform: `scaleX(${videoJob.done / videoJob.total})` }} />
+          </div>
+        )}
+      </div>
+
+      <div className="a-upload-frames">
+        <div>
           <h3 className="a-card__subtitle">Upload frames</h3>
           <p className="a-muted">
             Select a folder or a set of numbered JPGs (max 5 MB each). They are renamed <code>frame-001.jpg…</code> in the{' '}
@@ -266,7 +348,7 @@ function Sequences({ data, setMedia }: { data: EditorData; setMedia: Props['setM
               type="file"
               multiple
               accept="image/jpeg,image/png,image/webp"
-              disabled={Boolean(progress)}
+              disabled={busy}
               onChange={(e) => {
                 void uploadFrames(Array.from(e.target.files ?? []))
                 e.target.value = ''
@@ -282,11 +364,8 @@ function Sequences({ data, setMedia }: { data: EditorData; setMedia: Props['setM
       </div>
 
       <details className="a-details">
-        <summary>From a video file</summary>
-        {/* TODO(v2): server-side worker (Edge Function + FFmpeg) that turns an uploaded listing-videos object into frames automatically. */}
-        <p className="a-muted">
-          Automatic video → frame extraction is not part of v1. Export frames locally with FFmpeg, then upload them above:
-        </p>
+        <summary>Exporting frames yourself</summary>
+        <p className="a-muted">For full control over quality, export frames with FFmpeg and upload them above:</p>
         <pre className="a-code">
           {`# landscape, 240 frames, 1920px wide
 ffmpeg -i walkthrough.mp4 -vf "fps=240/DURATION,scale=1920:-2" -q:v 3 frame-%03d.jpg

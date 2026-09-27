@@ -501,6 +501,15 @@
   cursor: pointer;
 }
 
+.a-file.is-disabled,
+.a-file.is-disabled input {
+  cursor: progress;
+}
+
+.a-file.is-disabled {
+  opacity: 0.75;
+}
+
 /* Status ------------------------------------------------------------------ */
 
 .a-status {
