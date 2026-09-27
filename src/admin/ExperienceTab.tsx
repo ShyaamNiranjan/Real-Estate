@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { expandFramePattern, joinUrl } from '../lib/format'
 import { asObject, type ExperienceConfig, type ScrollBeat } from '../types/content'
 import type { Json, ListingMediaRow, ListingRow, MediaAspect } from '../types/database'
@@ -178,6 +178,38 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
 
 type VideoJob = { phase: 'reading' | 'extracting' | 'uploading'; done: number; total: number }
 
+/** Counts enter/leave so hovering over child elements does not flicker the highlight. */
+function useFileDrop(onFiles: (files: File[]) => void, enabled: boolean) {
+  const [isOver, setIsOver] = useState(false)
+  const depth = useRef(0)
+  const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer.types).includes('Files')
+  const props = {
+    onDragEnter: (e: DragEvent) => {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      depth.current += 1
+      if (enabled) setIsOver(true)
+    },
+    onDragOver: (e: DragEvent) => {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = enabled ? 'copy' : 'none'
+    },
+    onDragLeave: () => {
+      depth.current = Math.max(0, depth.current - 1)
+      if (depth.current === 0) setIsOver(false)
+    },
+    onDrop: (e: DragEvent) => {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      depth.current = 0
+      setIsOver(false)
+      if (enabled) onFiles(Array.from(e.dataTransfer.files))
+    },
+  }
+  return { isOver, props }
+}
+
 function videoLabel(job: VideoJob) {
   if (job.phase === 'reading') return 'Reading video…'
   const pct = job.total ? Math.round((job.done / job.total) * 100) : 0
@@ -244,6 +276,30 @@ function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: 
     }
   }
 
+  /** Either zone accepts either kind of file, so a drop on the "wrong" zone still does the right thing. */
+  const onDropped = (files: File[]) => {
+    if (busy || !files.length) return
+    const video = files.find((f) => f.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(f.name))
+    if (video) return void uploadVideo(video)
+    const images = files.filter((f) => f.type.startsWith('image/'))
+    if (images.length) return void uploadFrames(images)
+    toast('Drop a video or image frames', 'error')
+  }
+  const videoDrop = useFileDrop(onDropped, !busy)
+  const framesDrop = useFileDrop(onDropped, !busy)
+
+  useEffect(() => {
+    const block = (e: globalThis.DragEvent) => {
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) e.preventDefault()
+    }
+    window.addEventListener('dragover', block)
+    window.addEventListener('drop', block)
+    return () => {
+      window.removeEventListener('dragover', block)
+      window.removeEventListener('drop', block)
+    }
+  }, [])
+
   const uploadVideo = async (file: File) => {
     const controller = new AbortController()
     abortRef.current = controller
@@ -294,12 +350,12 @@ function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: 
         ))}
       </div>
 
-      <div className="a-upload-frames">
+      <div className={`a-upload-frames a-dropzone${videoDrop.isOver ? ' is-over' : ''}`} {...videoDrop.props}>
         <div>
           <h3 className="a-card__subtitle">Upload a video</h3>
           <p className="a-muted">
-            MP4 or WebM. The walkthrough frames are extracted in your browser, then uploaded — keep this tab open until it finishes. Wide videos become the
-            desktop sequence, tall phone videos the mobile one; either works on both if it is the only one.
+            Drop an MP4 or WebM here, or choose one. The walkthrough frames are extracted in your browser, then uploaded — keep this tab open until it
+            finishes. Wide videos become the desktop sequence, tall phone videos the mobile one; either works on both if it is the only one.
           </p>
         </div>
         <div className="a-inline-form">
@@ -329,11 +385,11 @@ function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: 
         )}
       </div>
 
-      <div className="a-upload-frames">
+      <div className={`a-upload-frames a-dropzone${framesDrop.isOver ? ' is-over' : ''}`} {...framesDrop.props}>
         <div>
           <h3 className="a-card__subtitle">Upload frames</h3>
           <p className="a-muted">
-            Select a folder or a set of numbered JPGs (max 5 MB each). They are renamed <code>frame-001.jpg…</code> in the{' '}
+            Drop or select a set of numbered JPGs (max 5 MB each). They are renamed <code>frame-001.jpg…</code> in the{' '}
             <code>listing-frames</code> bucket.
           </p>
         </div>
