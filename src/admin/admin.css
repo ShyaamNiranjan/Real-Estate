@@ -591,6 +591,19 @@
   background: #fcfbf8;
 }
 
+.a-table tbody tr.is-clickable {
+  cursor: pointer;
+}
+
+.a-table tbody tr.is-clickable:hover {
+  background: #f7f4ee;
+}
+
+.a-table tbody tr.is-clickable:hover .a-table__title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .a-table__thumb-col {
   width: 88px;
 }

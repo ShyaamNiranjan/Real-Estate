@@ -135,7 +135,17 @@ export function Dashboard() {
             </thead>
             <tbody>
               {visible.map((r) => (
-                <tr key={r.id}>
+                <tr
+                  key={r.id}
+                  className="is-clickable"
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('a, button, input, select, textarea')) return
+                    if (window.getSelection()?.toString()) return
+                    const to = `/admin/listings/${r.id}`
+                    if (e.metaKey || e.ctrlKey) window.open(to, '_blank')
+                    else navigate(to)
+                  }}
+                >
                   <td className="a-hide-sm">
                     <Link to={`/admin/listings/${r.id}`} className="a-thumb" tabIndex={-1} aria-hidden>
                       {r.cover_image_url ? <img src={r.cover_image_url} alt="" loading="lazy" /> : <span />}
