@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { asObject, type SectionContent, type SectionStyle } from '../types/content'
 import type { PageSectionRow } from '../types/database'
 import { Gallery, type GalleryImage } from './Gallery'
+import { SAFE_HREF } from './links'
 import { useReveal } from './useReveal'
 
 type Props = {
@@ -10,8 +11,6 @@ type Props = {
   fallbackImage: string | null
   onEnquire: () => void
 }
-
-const SAFE_HREF = /^(https?:\/\/|\/(?!\/)|mailto:|tel:|#)/i
 
 export function Sections({ sections, gallery, fallbackImage, onEnquire }: Props) {
   return (
@@ -29,7 +28,7 @@ export function Sections({ sections, gallery, fallbackImage, onEnquire }: Props)
   )
 }
 
-function Paragraphs({ text, className }: { text: string | null; className: string }) {
+export function Paragraphs({ text, className }: { text: string | null; className: string }) {
   if (!text) return null
   return (
     <div className={className}>

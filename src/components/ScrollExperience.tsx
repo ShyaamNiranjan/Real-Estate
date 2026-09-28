@@ -22,7 +22,7 @@ const FIT_BIAS = 0.56
 const SWIPE_FACTOR = 1.2
 /** Rotate mode: momentum decay per millisecond after the finger lifts. */
 const SWIPE_DECAY = 0.9965
-const SWIPED_KEY = 'aurelia:walkthrough-swiped'
+const SWIPED_KEY = 'yniidi:walkthrough-swiped'
 
 type Props = {
   sequences: Partial<Record<Variant, FrameSequence>>

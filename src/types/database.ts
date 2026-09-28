@@ -8,6 +8,15 @@ export type SectionPreset = 'hero' | 'tiles' | 'text' | 'gallery' | 'specs' | 'c
 export type SectionLayout = 'default' | 'tiles' | 'split' | 'full'
 export type EnquiryStatus = 'new' | 'read' | 'closed'
 export type ProfileRole = 'admin' | 'member'
+export type HomeSectionPreset =
+  | 'collection'
+  | 'walkthrough'
+  | 'stats'
+  | 'services'
+  | 'approach'
+  | 'neighbourhoods'
+  | 'testimonials'
+  | 'contact'
 
 type Table<Row, Required extends keyof Row = never> = {
   Row: Row
@@ -41,6 +50,9 @@ export type SiteSettingsRow = {
   hero_image_url: string | null
   hero_cta_label: string | null
   footer_note: string | null
+  address: string | null
+  rera_number: string | null
+  demo_note: string | null
   updated_at: string
 }
 
@@ -96,6 +108,19 @@ export type PageSectionRow = {
   updated_at: string
 }
 
+export type HomeSectionRow = {
+  id: string
+  preset: HomeSectionPreset
+  sort_order: number
+  is_visible: boolean
+  title: string | null
+  body: string | null
+  content: Json
+  style: Json
+  created_at: string
+  updated_at: string
+}
+
 export type EnquiryRow = {
   id: string
   listing_id: string | null
@@ -115,6 +140,7 @@ export type Database = {
       listings: Table<ListingRow, 'slug' | 'title'>
       listing_media: Table<ListingMediaRow, 'listing_id' | 'kind'>
       page_sections: Table<PageSectionRow, 'listing_id' | 'preset'>
+      home_sections: Table<HomeSectionRow, 'preset'>
       enquiries: Table<EnquiryRow, 'name' | 'email'>
     }
     Views: { [_ in never]: never }

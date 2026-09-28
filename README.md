@@ -1,6 +1,6 @@
-# AURELIA by YNIIDI — Real-estate marketplace + Studio CMS
+# YNIIDI Estates — Real-estate marketplace + Studio CMS
 
-A brand-led property marketplace with immersive scroll walkthroughs, photo listings, and an admin studio for managing everything without code.
+A brand-led property marketplace with immersive scroll walkthroughs, photo listings, a CMS-managed home page, and an admin studio for managing everything without code. The demo is branded **YNIIDI Estates** (Chennai); rename it in Site settings.
 
 - **Live:** https://realestate.yniidi.com
 - **Stack:** Vite · React 19 · TypeScript · React Router 7 · Supabase (Postgres, Auth, Storage) · Vercel
@@ -9,14 +9,15 @@ A brand-led property marketplace with immersive scroll walkthroughs, photo listi
 
 | Route | What it is |
 | --- | --- |
-| `/` | Marketplace: full-bleed brand hero, the collection, enquiries |
+| `/` | Marketplace: brand intro (once per session), full-bleed hero, then the sections from `home_sections` (collection, walkthrough teaser, numbers, services, neighbourhoods, testimonials, statement, enquiry) and the footer |
 | `/listing/:slug` | Listing page. `immersive` listings play a canvas frame-sequence walkthrough; `photo` listings get a full-bleed cover and gallery. Sections render from `page_sections`. |
 | `/admin/login` | Studio sign-in (Supabase email + password) |
 | `/admin` | Listings dashboard (filter by draft / preview / published, search) |
 | `/admin/listings/new` | Create a draft with starter sections |
 | `/admin/listings/:id/{details,media,sections,experience}` | Listing editor |
+| `/admin/home` | Home page: show/hide, reorder and edit each section below the hero |
 | `/admin/enquiries` | Enquiry inbox |
-| `/admin/settings` | Brand name, home hero, colours, contact |
+| `/admin/settings` | Brand name, home hero, colours, contact, office address, RERA number, social links, demo note |
 
 Drafts and previews are only readable by admins (enforced by Postgres RLS). Signed-in admins can open `/listing/:slug` for any status to preview; a bar marks the page as not public.
 
@@ -61,7 +62,16 @@ Only `VITE_*` variables are bundled into the browser. No secrets are hard-coded.
 5. **Deploy the SPA** anywhere that serves static files with a fallback to `index.html`:
    - **Vercel:** import the repo, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, deploy. `vercel.json` already handles rewrites and caching.
    - **Netlify / Cloudflare Pages / Nginx:** build with `npm run build`, publish `dist/`, and add a catch-all rewrite to `/index.html`.
-6. **Brand it** in `/admin/settings` (name, hero, colours, contact).
+6. **Brand it** in `/admin/settings` (name, hero, colours, contact, address, RERA number, socials) and `/admin/home` (every section below the hero). Also update the `<title>`, description and Open Graph tags in `index.html`, and `public/favicon.svg`. Clear the **Demo note** once real listings are live.
+
+## Home page
+
+`home_sections` holds one row per section below the hero: `preset` (`collection`, `walkthrough`, `stats`, `services`, `approach`, `neighbourhoods`, `testimonials`, `contact`), `sort_order`, `is_visible`, `title`, `body`, and `content` / `style` JSON. The public can read visible rows; admins manage everything (RLS via `public.is_admin()`). If the table is missing, the home page falls back to the collection, statement and enquiry form.
+
+- **Walkthrough** loops ~48 frames sampled from any immersive listing's landscape sequence (chosen in the Studio), loads only near the viewport, and shows a still for visitors who prefer reduced motion.
+- **Numbers** count up once when revealed; text around the number (`+`, `days`) is kept.
+- **Neighbourhoods** tiles take an uploaded photograph; without one they get a contour-map placeholder.
+- The **brand intro** plays once per browser session, only when the first page visited is `/` (not deep links or the Studio). Click, tap, scroll or any key skips it.
 
 ## Immersive walkthroughs
 

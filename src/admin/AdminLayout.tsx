@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { useSite } from '../lib/site'
+import { brandParts, useSite } from '../lib/site'
 import { countNewEnquiries } from './api'
 
 export function AdminLayout() {
@@ -20,8 +20,8 @@ export function AdminLayout() {
     <div className={`a-shell ${navOpen ? 'nav-open' : ''}`}>
       <aside className="a-side">
         <div className="a-side__top">
-          <NavLink to="/admin" end className="a-side__brand">
-            <span>{settings.brand_name}</span>
+          <NavLink to="/admin" end className="a-side__brand" aria-label={`${settings.brand_name} Studio`}>
+            <span>{brandParts(settings.brand_name).name}</span>
             <small>Studio</small>
           </NavLink>
           <button
@@ -39,6 +39,9 @@ export function AdminLayout() {
         <nav className="a-side__nav" aria-label="Admin">
           <NavLink to="/admin" end className="a-side__link">
             Listings
+          </NavLink>
+          <NavLink to="/admin/home" className="a-side__link">
+            Home page
           </NavLink>
           <NavLink to="/admin/enquiries" className="a-side__link">
             Enquiries

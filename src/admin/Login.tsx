@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { useDocumentTitle, useSite } from '../lib/site'
+import { brandParts, useDocumentTitle, useSite } from '../lib/site'
 import { errorMessage } from './ui'
 
 export function Login() {
   useDocumentTitle('Admin sign in')
   const { settings } = useSite()
+  const brand = brandParts(settings.brand_name).name
   const { session, isAdmin, loading, signIn } = useAuth()
   const location = useLocation()
   const [error, setError] = useState<string | null>(null)
@@ -36,10 +37,10 @@ export function Login() {
       <div className="a-auth__art" aria-hidden>
         <img src={settings.hero_image_url ?? '/media/sequence/frame-001.jpg'} alt="" />
         <div className="a-auth__art-veil" />
-        <p className="a-auth__art-brand">{settings.brand_name}</p>
+        <p className="a-auth__art-brand">{brand}</p>
       </div>
       <div className="a-auth__panel">
-        <p className="a-auth__brand">{settings.brand_name} · Studio</p>
+        <p className="a-auth__brand">{brand} · Studio</p>
         <h1 className="a-auth__title">Sign in to manage the collection.</h1>
         <form className="a-auth__form" onSubmit={onSubmit}>
           <label className="a-field">

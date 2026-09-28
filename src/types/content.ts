@@ -1,4 +1,4 @@
-import type { Json, ListingMediaRow, ListingRow, PageSectionRow } from './database'
+import type { HomeSectionPreset, Json, ListingMediaRow, ListingRow, PageSectionRow } from './database'
 
 export type SectionTone = 'light' | 'stone' | 'dark'
 
@@ -69,6 +69,62 @@ export type FrameSequence = {
   frameCount: number
   pattern: string
   pxPerFrame?: number
+}
+
+/** A short looping excerpt of a listing's frame sequence (home page walkthrough teaser). */
+export type FrameLoop = {
+  baseUrl: string
+  pattern: string
+  count: number
+  /** Slug of the listing the frames came from, so the Studio can show the current choice. */
+  listing?: string
+}
+
+/** One list item; each home preset uses a subset of these fields. */
+export type HomeItem = {
+  title?: string
+  body?: string
+  image?: string
+  meta?: string
+  value?: string
+  label?: string
+  quote?: string
+  name?: string
+  context?: string
+}
+
+export type HomeContent = {
+  eyebrow?: string
+  ctaLabel?: string
+  href?: string
+  visual?: 'loop' | 'still'
+  image?: string
+  caption?: string
+  frames?: FrameLoop
+  items?: HomeItem[]
+}
+
+/** In-page anchor for each home preset (header, footer and deep links scroll to these). */
+export const HOME_ANCHORS: Record<HomeSectionPreset, string> = {
+  collection: 'collection',
+  walkthrough: 'walkthrough',
+  stats: 'numbers',
+  services: 'services',
+  approach: 'approach',
+  neighbourhoods: 'neighbourhoods',
+  testimonials: 'testimonials',
+  contact: 'enquire',
+}
+
+export const SOCIAL_KEYS = ['instagram', 'linkedin', 'youtube', 'facebook'] as const
+export type SocialKey = (typeof SOCIAL_KEYS)[number]
+export type Socials = Partial<Record<SocialKey, string>>
+
+export const SOCIAL_LABEL: Record<SocialKey, string> = {
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  youtube: 'YouTube',
+  facebook: 'Facebook',
 }
 
 export type ListingWithRelations = ListingRow & {

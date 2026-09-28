@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useSite } from '../lib/site'
+import { brandParts, useSite } from '../lib/site'
+import { scrollToAnchor } from './links'
 
 type Props = {
   variant: 'home' | 'listing'
@@ -9,6 +10,7 @@ type Props = {
 
 export function SiteHeader({ variant, onEnquire }: Props) {
   const { settings } = useSite()
+  const { name, sub } = brandParts(settings.brand_name)
   const [solid, setSolid] = useState(false)
 
   useEffect(() => {
@@ -37,15 +39,16 @@ export function SiteHeader({ variant, onEnquire }: Props) {
 
   const enquire = () => {
     if (onEnquire) return onEnquire()
-    document.getElementById('enquire')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // The enquiry section can be hidden in the Studio; the footer still has the contact details.
+    if (!scrollToAnchor('enquire')) scrollToAnchor('site-footer')
   }
 
   return (
     <header className={`site-header site-header--${variant} ${solid ? 'is-solid' : ''}`}>
       {variant === 'home' ? (
         <Link to="/" className="wordmark" aria-label={`${settings.brand_name} home`}>
-          <span className="wordmark__name">{settings.brand_name}</span>
-          <span className="wordmark__by">by YNIIDI</span>
+          <span className="wordmark__name">{name}</span>
+          {sub && <span className="wordmark__sub">{sub}</span>}
         </Link>
       ) : (
         <Link to="/" className="site-header__back" viewTransition>
@@ -61,7 +64,7 @@ export function SiteHeader({ variant, onEnquire }: Props) {
             className="site-header__link"
             onClick={(e) => {
               e.preventDefault()
-              document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
+              scrollToAnchor('collection')
             }}
           >
             Collection

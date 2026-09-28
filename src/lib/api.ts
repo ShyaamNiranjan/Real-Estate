@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { ListingRow, SiteSettingsRow } from '../types/database'
+import type { HomeSectionRow, ListingRow, SiteSettingsRow } from '../types/database'
 import type { ListingWithRelations } from '../types/content'
 
 export type ListingCard = Pick<
@@ -27,6 +27,15 @@ export async function fetchSiteSettings(): Promise<SiteSettingsRow | null> {
   return data
 }
 
+/**
+ * Last successful home payloads. Returning to `/` renders these immediately (then refreshes),
+ * so the page has its full height and scroll restoration lands where the visitor left.
+ */
+export const homeCache: { listings: ListingCard[] | null; sections: HomeSectionRow[] | null } = {
+  listings: null,
+  sections: null,
+}
+
 export async function fetchPublishedListings(): Promise<ListingCard[]> {
   const { data, error } = await supabase
     .from('listings')
@@ -35,7 +44,20 @@ export async function fetchPublishedListings(): Promise<ListingCard[]> {
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false })
   if (error) throw error
-  return data ?? []
+  homeCache.listings = data ?? []
+  return homeCache.listings
+}
+
+/** Visible home sections in order. Admins can read hidden rows too, so filter explicitly. */
+export async function fetchHomeSections(): Promise<HomeSectionRow[]> {
+  const { data, error } = await supabase
+    .from('home_sections')
+    .select('*')
+    .eq('is_visible', true)
+    .order('sort_order', { ascending: true })
+  if (error) throw error
+  homeCache.sections = data ?? []
+  return homeCache.sections
 }
 
 /** RLS returns drafts/previews only to signed-in admins, which is what powers preview. */

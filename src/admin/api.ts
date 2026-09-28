@@ -1,5 +1,14 @@
 import { BUCKETS, supabase } from '../lib/supabase'
-import type { Database, EnquiryRow, EnquiryStatus, ListingMediaRow, ListingRow, PageSectionRow, SiteSettingsRow } from '../types/database'
+import type {
+  Database,
+  EnquiryRow,
+  EnquiryStatus,
+  HomeSectionRow,
+  ListingMediaRow,
+  ListingRow,
+  PageSectionRow,
+  SiteSettingsRow,
+} from '../types/database'
 
 type Tables = Database['public']['Tables']
 export type ListingInsert = Tables['listings']['Insert']
@@ -9,6 +18,7 @@ export type MediaUpdate = Tables['listing_media']['Update']
 export type SectionInsert = Tables['page_sections']['Insert']
 export type SectionUpdate = Tables['page_sections']['Update']
 export type SettingsUpdate = Tables['site_settings']['Update']
+export type HomeSectionUpdate = Tables['home_sections']['Update']
 
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message)
@@ -69,7 +79,7 @@ export async function deleteMedia(media: ListingMediaRow) {
   unwrap(await supabase.from('listing_media').delete().eq('id', media.id))
 }
 
-export async function reorderRows(table: 'listing_media' | 'page_sections', ids: string[]) {
+export async function reorderRows(table: 'listing_media' | 'page_sections' | 'home_sections', ids: string[]) {
   await Promise.all(
     ids.map(async (id, index) => unwrap(await supabase.from(table).update({ sort_order: index }).eq('id', id))),
   )
@@ -177,6 +187,44 @@ export async function updateSection(id: string, patch: SectionUpdate): Promise<P
 
 export async function deleteSection(id: string) {
   unwrap(await supabase.from('page_sections').delete().eq('id', id))
+}
+
+// Home page ------------------------------------------------------------------
+
+export async function listHomeSections(): Promise<HomeSectionRow[]> {
+  return unwrap(await supabase.from('home_sections').select('*').order('sort_order', { ascending: true }))
+}
+
+export async function updateHomeSection(id: string, patch: HomeSectionUpdate): Promise<HomeSectionRow> {
+  return unwrap(await supabase.from('home_sections').update(patch).eq('id', id).select('*').single())
+}
+
+export type WalkthroughSource = {
+  slug: string
+  title: string
+  status: ListingRow['status']
+  baseUrl: string
+  pattern: string
+  count: number
+}
+
+/** Immersive listings with a landscape frame sequence: the sources the home teaser can loop. */
+export async function listWalkthroughSources(): Promise<WalkthroughSource[]> {
+  const res = await supabase
+    .from('listings')
+    .select('slug, title, status, listing_media(kind, aspect, public_url, frame_pattern, frame_count)')
+    .eq('experience_type', 'immersive')
+    .order('sort_order', { ascending: true })
+  const rows = unwrap(res) as unknown as (Pick<ListingRow, 'slug' | 'title' | 'status'> & {
+    listing_media: Pick<ListingMediaRow, 'kind' | 'aspect' | 'public_url' | 'frame_pattern' | 'frame_count'>[]
+  })[]
+  return rows.flatMap((row) => {
+    const seq = row.listing_media.find(
+      (m) => m.kind === 'frame_sequence' && m.aspect !== 'portrait' && m.public_url && m.frame_pattern && m.frame_count,
+    )
+    if (!seq) return []
+    return [{ slug: row.slug, title: row.title, status: row.status, baseUrl: seq.public_url!, pattern: seq.frame_pattern!, count: seq.frame_count! }]
+  })
 }
 
 // Enquiries ------------------------------------------------------------------

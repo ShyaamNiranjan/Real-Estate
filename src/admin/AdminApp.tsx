@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { AdminLayout } from './AdminLayout'
 import { Dashboard } from './Dashboard'
 import { Enquiries } from './Enquiries'
+import { HomePage } from './HomePage'
 import { ListingEditor } from './ListingEditor'
 import { Login } from './Login'
 import { NewListing } from './NewListing'
@@ -57,6 +58,7 @@ export default function AdminApp() {
             <Route path="listings/new" element={<NewListing />} />
             <Route path="listings/:id" element={<ListingEditor />} />
             <Route path="listings/:id/:tab" element={<ListingEditor />} />
+            <Route path="home" element={<HomePage />} />
             <Route path="enquiries" element={<Enquiries />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
