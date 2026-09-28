@@ -27,8 +27,19 @@ export type ScrollBeat = {
   id: string
   side: 'left' | 'right'
   at: number
+  /** Where the caption leaves (0–1). Unset = stays until the next beat starts. */
+  until?: number | null
   label: string
   text: string
+}
+
+export const BEATS_END = 0.95
+
+/** Beats must be sorted by `at`. */
+export function beatEnd(beats: ScrollBeat[], i: number): number {
+  const b = beats[i]
+  const auto = beats[i + 1]?.at ?? BEATS_END
+  return typeof b.until === 'number' && b.until > b.at ? Math.min(BEATS_END, b.until) : auto
 }
 
 export type ExperienceHero = {

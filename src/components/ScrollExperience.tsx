@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { expandFramePattern, joinUrl } from '../lib/format'
-import type { ExperienceHero, FrameSequence, MobileMode, ScrollBeat } from '../types/content'
+import { BEATS_END, beatEnd, type ExperienceHero, type FrameSequence, type MobileMode, type ScrollBeat } from '../types/content'
 
 type Variant = 'landscape' | 'portrait'
 /** cover: full-bleed crop (desktop, landscape, portrait sequences). rotate/fit: landscape frames on an upright phone. */
@@ -8,7 +8,7 @@ type Layout = 'cover' | 'rotate' | 'fit'
 
 const STAGE_BG = '#0c0e0d'
 const HERO_UNTIL = 0.04
-const BEATS_UNTIL = 0.95
+const BEATS_UNTIL = BEATS_END
 const COMPLETE_AT = 0.999
 /** In rotate mode, "Turn upright to continue" appears from here until the stage releases. */
 const END_CUE_AT = 0.9
@@ -308,8 +308,9 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
 
       let beat = -1
       if (progress >= HERO_UNTIL && progress < BEATS_UNTIL) {
-        beatsRef.current.forEach((b, i) => {
-          if (progress >= b.at) beat = i
+        const all = beatsRef.current
+        all.forEach((b, i) => {
+          if (progress >= b.at && progress < beatEnd(all, i)) beat = i
         })
       }
       if (beat !== activeBeat) {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { expandFramePattern, joinUrl } from '../lib/format'
-import { asMobileMode, asObject, type ExperienceConfig, type MobileMode, type ScrollBeat } from '../types/content'
+import { BEATS_END, asMobileMode, asObject, beatEnd, type ExperienceConfig, type MobileMode, type ScrollBeat } from '../types/content'
 import type { Json, ListingMediaRow, ListingRow, MediaAspect } from '../types/database'
 import { createMedia, deleteMedia, updateListing, updateMedia, uploadFrameSequence } from './api'
 import type { EditorData } from './ListingEditor'
@@ -12,6 +12,8 @@ type Props = {
   onListing: (l: ListingRow) => void
   setMedia: (fn: (m: ListingMediaRow[]) => ListingMediaRow[]) => void
 }
+
+const MIN_BEAT = 0.02
 
 const newBeat = (at: number): ScrollBeat => ({
   id: crypto.randomUUID().slice(0, 8),
@@ -41,7 +43,11 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
     try {
       const clean = beats
         .filter((b) => b.text.trim())
-        .map((b) => ({ ...b, at: Math.min(0.94, Math.max(0.04, Number(b.at) || 0.05)) }))
+        .map((b) => {
+          const at = Math.min(0.92, Math.max(0.04, Number(b.at) || 0.05))
+          const until = typeof b.until === 'number' && b.until > at ? Math.min(BEATS_END, b.until) : null
+          return { ...b, at, until }
+        })
         .sort((a, b) => a.at - b.at)
       const experience = { ...asObject<Record<string, Json>>(listing.experience), hero, beats: clean, mobile_mode: mobileMode } as unknown as Json
       const saved = await updateListing(listing.id, { experience })
@@ -57,6 +63,13 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
   useSaveShortcut(() => void save())
 
   const updateBeat = (i: number, patch: Partial<ScrollBeat>) => setBeats((b) => b.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+
+  const timeline = useMemo(() => {
+    const sorted = beats.map((beat, idx) => ({ beat, num: idx + 1 })).sort((a, b) => a.beat.at - b.beat.at)
+    const plain = sorted.map((s) => s.beat)
+    return sorted.map((s, j) => ({ ...s, end: beatEnd(plain, j) }))
+  }, [beats])
+  const endOf = (b: ScrollBeat) => timeline.find((t) => t.beat.id === b.id)?.end ?? BEATS_END
 
   return (
     <div className="a-editor">
@@ -79,9 +92,13 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
           </div>
 
           <div className="a-timeline" aria-hidden>
-            {beats.map((b, i) => (
-              <span key={b.id} className={`a-timeline__mark a-timeline__mark--${b.side}`} style={{ left: `${b.at * 100}%` }}>
-                {i + 1}
+            {timeline.map(({ beat: b, num, end }) => (
+              <span
+                key={b.id}
+                className={`a-timeline__bar a-timeline__bar--${b.side}`}
+                style={{ left: `${b.at * 100}%`, width: `${Math.max(0, end - b.at) * 100}%` }}
+              >
+                <span className="a-timeline__mark">{num}</span>
               </span>
             ))}
           </div>
@@ -97,16 +114,44 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
                     <Field label="Label">
                       {(id) => <input id={id} className="a-input" value={b.label} onChange={(e) => updateBeat(i, { label: e.target.value })} placeholder="Arrival" />}
                     </Field>
-                    <Field label={`Position · ${Math.round(b.at * 100)}%`}>
+                    <Field label={`Starts · ${Math.round(b.at * 100)}%`}>
                       {(id) => (
                         <input
                           id={id}
                           type="range"
                           min={0.04}
-                          max={0.94}
+                          max={0.92}
                           step={0.01}
                           value={b.at}
-                          onChange={(e) => updateBeat(i, { at: Number(e.target.value) })}
+                          onChange={(e) => {
+                            const at = Number(e.target.value)
+                            updateBeat(i, typeof b.until === 'number' && b.until < at + MIN_BEAT ? { at, until: Math.min(BEATS_END, at + MIN_BEAT) } : { at })
+                          }}
+                          className="a-range"
+                        />
+                      )}
+                    </Field>
+                    <Field
+                      label={`Ends · ${Math.round(endOf(b) * 100)}%`}
+                      hint={
+                        typeof b.until === 'number' ? (
+                          <button type="button" className="a-link" onClick={() => updateBeat(i, { until: null })}>
+                            Reset to auto
+                          </button>
+                        ) : (
+                          'Auto — until the next beat'
+                        )
+                      }
+                    >
+                      {(id) => (
+                        <input
+                          id={id}
+                          type="range"
+                          min={0.06}
+                          max={BEATS_END}
+                          step={0.01}
+                          value={endOf(b)}
+                          onChange={(e) => updateBeat(i, { until: Math.max(b.at + MIN_BEAT, Number(e.target.value)) })}
                           className="a-range"
                         />
                       )}
