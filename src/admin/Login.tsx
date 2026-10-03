@@ -41,7 +41,9 @@ export function Login() {
       <div className="a-auth__panel">
         <p className="a-auth__brand">YE · Studio</p>
         <h1 className="a-auth__title">Sign in to your workspace.</h1>
-        <p className="a-auth__body">Prototype: sign in with the demo Studio account for {settings.brand_name}.</p>
+        <p className="a-auth__body">
+          Prototype: signup does not create real accounts yet. Sign in with the existing {settings.brand_name} admin account.
+        </p>
         <form className="a-auth__form" onSubmit={onSubmit}>
           <label className="a-field">
             <span className="a-field__label">Email</span>
