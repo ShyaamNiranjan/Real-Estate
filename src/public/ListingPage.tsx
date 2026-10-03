@@ -4,6 +4,8 @@ import { ScrollExperience } from '../components/ScrollExperience'
 import { fetchListingBySlug } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { listingFacts } from '../lib/format'
+import { useProto } from '../lib/prototype'
+import { useRealtor } from '../lib/realtor'
 import { useDocumentTitle } from '../lib/site'
 import { asMobileMode, asObject, type ExperienceConfig, type FrameSequence, type ListingWithRelations } from '../types/content'
 import type { ListingMediaRow } from '../types/database'
@@ -35,6 +37,7 @@ function toSequence(m: ListingMediaRow): FrameSequence | null {
 export function ListingPage() {
   const { slug = '' } = useParams()
   const { loading: authLoading, isAdmin } = useAuth()
+  const { base } = useRealtor()
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   useEffect(() => {
@@ -56,12 +59,13 @@ export function ListingPage() {
   useDocumentTitle(state.kind === 'ready' ? state.listing.title : null)
 
   if (state.kind === 'loading') return <div className="page page--loading" aria-busy aria-label="Loading residence" />
-  if (state.kind === 'missing') return <NotFound />
+  if (state.kind === 'missing') return <NotFound href={base} />
   if (state.kind === 'error')
     return (
       <NotFound
         title="This residence is taking a moment."
         body="We could not load it just now. Please refresh, or return to the collection."
+        href={base}
       />
     )
   return <Listing listing={state.listing} />
@@ -107,7 +111,7 @@ function Listing({ listing }: { listing: ListingWithRelations }) {
   return (
     <div className={`page page--listing ${immersive ? 'is-immersive' : 'is-photo'}`}>
       <SiteHeader variant="listing" onEnquire={enquire} />
-      {listing.status !== 'published' && <PreviewBar listing={listing} />}
+      <PreviewBar listing={listing} />
 
       {immersive ? (
         <ScrollExperience
@@ -251,12 +255,23 @@ function ListingEnquiry({ listing }: { listing: ListingWithRelations }) {
 }
 
 function PreviewBar({ listing }: { listing: ListingWithRelations }) {
+  const proto = useProto()
+  if (proto.plan === 'free')
+    return (
+      <div className="preview-bar" role="status">
+        <span>
+          <strong>Private preview</strong> — only you can see this listing. Subscribe to publish and share it.
+        </span>
+        <Link to="/studio/plan">See plans</Link>
+      </div>
+    )
+  if (listing.status === 'published') return null
   return (
     <div className="preview-bar" role="status">
       <span>
-        <strong>{listing.status === 'draft' ? 'Draft' : 'Preview'}</strong> — only admins can see this page.
+        <strong>{listing.status === 'draft' ? 'Draft' : 'Preview'}</strong> — only your team can see this page.
       </span>
-      <Link to={`/admin/listings/${listing.id}`}>Edit listing</Link>
+      <Link to={`/studio/listings/${listing.id}`}>Edit listing</Link>
     </div>
   )
 }

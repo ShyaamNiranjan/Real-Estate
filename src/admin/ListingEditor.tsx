@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom'
 import { useDocumentTitle } from '../lib/site'
+import { useRealtor } from '../lib/realtor'
 import type { ListingMediaRow, ListingRow, PageSectionRow } from '../types/database'
 import { deleteListing, getListing, listMedia, listSections } from './api'
 import { DetailsTab } from './DetailsTab'
@@ -28,6 +29,7 @@ export function ListingEditor() {
   const { id = '', tab = 'details' } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
+  const { listing: listingPath } = useRealtor()
   const [data, setData] = useState<EditorData | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
 
@@ -61,7 +63,7 @@ export function ListingEditor() {
   if (failed)
     return (
       <div className="a-page">
-        <Link to="/admin" className="a-crumb">
+        <Link to="/studio/listings" className="a-crumb">
           ← Listings
         </Link>
         <h1 className="a-title">Listing unavailable</h1>
@@ -78,7 +80,7 @@ export function ListingEditor() {
     try {
       await deleteListing(listing.id)
       toast('Listing deleted')
-      navigate('/admin', { replace: true })
+      navigate('/studio/listings', { replace: true })
     } catch (err) {
       toast(errorMessage(err), 'error')
     }
@@ -88,18 +90,18 @@ export function ListingEditor() {
     <div className="a-page a-page--editor">
       <header className="a-page__head a-page__head--editor">
         <div className="a-page__head-main">
-          <Link to="/admin" className="a-crumb">
+          <Link to="/studio/listings" className="a-crumb">
             ← Listings
           </Link>
           <h1 className="a-title">{listing.title}</h1>
           <p className="a-page__sub">
             <StatusMark status={listing.status} />
-            <code>/listing/{listing.slug}</code>
+            <code>{listingPath(listing.slug)}</code>
             <span>{listing.experience_type === 'immersive' ? 'Immersive walkthrough' : 'Photo experience'}</span>
           </p>
         </div>
         <div className="a-page__head-actions">
-          <a className="a-btn a-btn--ghost" href={`/listing/${listing.slug}`} target="_blank" rel="noreferrer">
+          <a className="a-btn a-btn--ghost" href={listingPath(listing.slug)} target="_blank" rel="noreferrer">
             {listing.status === 'published' ? 'View live ↗' : 'Preview ↗'}
           </a>
           <ConfirmButton onConfirm={remove} confirmLabel="Delete permanently?">
@@ -112,7 +114,7 @@ export function ListingEditor() {
         {tabs.map((t) => (
           <NavLink
             key={t.key}
-            to={`/admin/listings/${listing.id}/${t.key}`}
+            to={`/studio/listings/${listing.id}/${t.key}`}
             className={() => `a-subnav__link ${activeTab === t.key ? 'active' : ''}`}
             replace
           >

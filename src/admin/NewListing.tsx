@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { slugify } from '../lib/format'
 import { useDocumentTitle } from '../lib/site'
+import { markDone } from '../lib/prototype'
+import { useRealtor } from '../lib/realtor'
 import type { ExperienceType } from '../types/database'
 import { createListing, createSection, isSlugTaken } from './api'
 import { Field, errorMessage, useToast } from './ui'
@@ -11,6 +13,7 @@ export function NewListing() {
   useDocumentTitle('New listing')
   const navigate = useNavigate()
   const toast = useToast()
+  const { base } = useRealtor()
   const { profile } = useAuth()
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
@@ -54,8 +57,9 @@ export function NewListing() {
           style: { tone: 'dark' },
         }),
       ])
+      markDone('property')
       toast('Listing created')
-      navigate(`/admin/listings/${listing.id}`, { replace: true })
+      navigate(`/studio/listings/${listing.id}`, { replace: true })
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -67,7 +71,7 @@ export function NewListing() {
     <div className="a-page a-page--narrow">
       <header className="a-page__head">
         <div>
-          <Link to="/admin" className="a-crumb">
+          <Link to="/studio/listings" className="a-crumb">
             ← Listings
           </Link>
           <h1 className="a-title">New listing</h1>
@@ -88,7 +92,7 @@ export function NewListing() {
             />
           )}
         </Field>
-        <Field label="URL slug" hint={<>Public address: /listing/{effectiveSlug || '…'}</>}>
+        <Field label="URL slug" hint={<>Public address: {base}/{effectiveSlug || '…'}</>}>
           {(id) => (
             <input
               id={id}
@@ -121,7 +125,7 @@ export function NewListing() {
           <button type="submit" className="a-btn a-btn--primary" disabled={busy}>
             {busy ? 'Creating…' : 'Create draft'}
           </button>
-          <Link to="/admin" className="a-btn a-btn--ghost">
+          <Link to="/studio/listings" className="a-btn a-btn--ghost">
             Cancel
           </Link>
         </div>

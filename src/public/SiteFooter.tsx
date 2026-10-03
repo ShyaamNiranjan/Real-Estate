@@ -1,4 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
+import { countryInfo, useProto } from '../lib/prototype'
+import { useRealtor } from '../lib/realtor'
 import { brandParts, useSite } from '../lib/site'
 import { HOME_ANCHORS, SOCIAL_KEYS, SOCIAL_LABEL } from '../types/content'
 import type { HomeSectionPreset } from '../types/database'
@@ -16,8 +18,11 @@ const QUICK_LINKS: { preset: HomeSectionPreset; label: string }[] = [
 export function SiteFooter({ presets }: { presets?: HomeSectionPreset[] }) {
   const { settings } = useSite()
   const { pathname } = useLocation()
+  const { base } = useRealtor()
+  const proto = useProto()
+  const country = countryInfo(proto.country)
   const { name, sub } = brandParts(settings.brand_name)
-  const onHome = pathname === '/'
+  const onHome = pathname === base
   const links = QUICK_LINKS.filter((l) => !presets || presets.includes(l.preset))
   const socials = SOCIAL_KEYS.filter((key) => settings.socials[key])
   const phone = settings.contact_phone
@@ -27,7 +32,7 @@ export function SiteFooter({ presets }: { presets?: HomeSectionPreset[] }) {
       <div className="site-footer__inner">
         <div className="site-footer__top">
           <div className="site-footer__intro">
-            <Link to="/" className="site-footer__brand" aria-label={`${settings.brand_name} home`}>
+            <Link to={base} className="site-footer__brand" aria-label={`${settings.brand_name} home`}>
               <span className="site-footer__name">{name}</span>
               {sub && <span className="site-footer__sub">{sub}</span>}
             </Link>
@@ -53,7 +58,7 @@ export function SiteFooter({ presets }: { presets?: HomeSectionPreset[] }) {
                           {l.label}
                         </a>
                       ) : (
-                        <Link to={{ pathname: '/', hash: `#${id}` }}>{l.label}</Link>
+                        <Link to={{ pathname: base, hash: `#${id}` }}>{l.label}</Link>
                       )}
                     </li>
                   )
@@ -99,16 +104,30 @@ export function SiteFooter({ presets }: { presets?: HomeSectionPreset[] }) {
 
         <div className="site-footer__base">
           <p>
-            {settings.rera_number && <span>RERA Reg. No. {settings.rera_number}</span>}
+            {settings.rera_number && (
+              <span>
+                {country.licenceShort} {settings.rera_number}
+              </span>
+            )}
             <span>
               © {new Date().getFullYear()} {settings.brand_name}
             </span>
+            {country.equalHousing && (
+              <span className="site-footer__eho">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden>
+                  <path d="M12 3 2 10.5h2.5V21h15V10.5H22L12 3Zm-4 9h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor" />
+                </svg>
+                Equal Housing Opportunity
+              </span>
+            )}
           </p>
           <p>
             {settings.demo_note && <span className="site-footer__demo">{settings.demo_note}</span>}
-            <a href="https://yniidi.com" target="_blank" rel="noreferrer">
-              Powered by YNIIDI
-            </a>
+            {proto.plan === 'free' && (
+              <Link to="/" className="site-footer__made">
+                Made with YE
+              </Link>
+            )}
           </p>
         </div>
       </div>

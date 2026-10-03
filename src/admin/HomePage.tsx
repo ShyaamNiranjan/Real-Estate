@@ -160,7 +160,7 @@ function FixedRow({ label, title }: { label: string; title: string | null }) {
           <span className="a-section__title">{title}</span>
         </div>
         <div className="a-section__tools">
-          <Link to="/admin/settings" className="a-link">
+          <Link to="/studio/settings" className="a-link">
             Edit in Site settings
           </Link>
         </div>

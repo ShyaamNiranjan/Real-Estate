@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { formatDate, listingFacts } from '../lib/format'
 import { useDocumentTitle } from '../lib/site'
+import { useRealtor } from '../lib/realtor'
 import type { ListingRow, ListingStatus } from '../types/database'
 import { listListings } from './api'
 import { EmptyState, Kbd, Spinner, StatusMark, errorMessage, useToast } from './ui'
@@ -18,6 +19,7 @@ export function Dashboard() {
   useDocumentTitle('Listings')
   const toast = useToast()
   const navigate = useNavigate()
+  const { listing: listingPath } = useRealtor()
   const [rows, setRows] = useState<ListingRow[] | null>(null)
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
@@ -37,7 +39,7 @@ export function Dashboard() {
       if (target.closest('input, textarea, select, [contenteditable]')) return
       if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
-        navigate('/admin/listings/new')
+        navigate('/studio/listings/new')
       }
       if (e.key === '/') {
         e.preventDefault()
@@ -73,7 +75,7 @@ export function Dashboard() {
           <p className="a-eyebrow">Collection</p>
           <h1 className="a-title">Listings</h1>
         </div>
-        <Link to="/admin/listings/new" className="a-btn a-btn--primary">
+        <Link to="/studio/listings/new" className="a-btn a-btn--primary">
           New listing <Kbd>N</Kbd>
         </Link>
       </header>
@@ -113,7 +115,7 @@ export function Dashboard() {
       ) : visible.length === 0 ? (
         <EmptyState title={rows.length === 0 ? 'No listings yet' : 'Nothing matches'}>
           {rows.length === 0 ? (
-            <Link to="/admin/listings/new" className="a-btn a-btn--primary">
+            <Link to="/studio/listings/new" className="a-btn a-btn--primary">
               Create the first listing
             </Link>
           ) : (
@@ -141,18 +143,18 @@ export function Dashboard() {
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('a, button, input, select, textarea')) return
                     if (window.getSelection()?.toString()) return
-                    const to = `/admin/listings/${r.id}`
+                    const to = `/studio/listings/${r.id}`
                     if (e.metaKey || e.ctrlKey) window.open(to, '_blank')
                     else navigate(to)
                   }}
                 >
                   <td className="a-hide-sm">
-                    <Link to={`/admin/listings/${r.id}`} className="a-thumb" tabIndex={-1} aria-hidden>
+                    <Link to={`/studio/listings/${r.id}`} className="a-thumb" tabIndex={-1} aria-hidden>
                       {r.cover_image_url ? <img src={r.cover_image_url} alt="" loading="lazy" /> : <span />}
                     </Link>
                   </td>
                   <td>
-                    <Link to={`/admin/listings/${r.id}`} className="a-table__title">
+                    <Link to={`/studio/listings/${r.id}`} className="a-table__title">
                       {r.title}
                     </Link>
                     <p className="a-table__meta">
@@ -168,10 +170,10 @@ export function Dashboard() {
                   </td>
                   <td className="a-table__muted a-hide-sm">{formatDate(r.updated_at)}</td>
                   <td className="a-table__actions">
-                    <Link to={`/admin/listings/${r.id}`} className="a-link">
+                    <Link to={`/studio/listings/${r.id}`} className="a-link">
                       Edit
                     </Link>
-                    <a href={`/listing/${r.slug}`} target="_blank" rel="noreferrer" className="a-link">
+                    <a href={listingPath(r.slug)} target="_blank" rel="noreferrer" className="a-link">
                       {r.status === 'published' ? 'View' : 'Preview'} ↗
                     </a>
                   </td>

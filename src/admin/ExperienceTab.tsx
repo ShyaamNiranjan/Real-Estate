@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { useRealtor } from '../lib/realtor'
 import { expandFramePattern, joinUrl } from '../lib/format'
 import { BEATS_END, asMobileMode, asObject, beatEnd, type ExperienceConfig, type MobileMode, type ScrollBeat } from '../types/content'
 import type { Json, ListingMediaRow, ListingRow, MediaAspect } from '../types/database'
@@ -25,6 +26,7 @@ const newBeat = (at: number): ScrollBeat => ({
 
 export function ExperienceTab({ data, onListing, setMedia }: Props) {
   const toast = useToast()
+  const { listing: listingPath } = useRealtor()
   const { listing } = data
   const initial = useMemo(() => asObject<ExperienceConfig>(listing.experience), [listing.experience])
   const [hero, setHero] = useState(initial.hero ?? {})
@@ -221,7 +223,7 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
               {saving ? 'Saving…' : dirty ? 'Save walkthrough' : 'Saved'}
               <Kbd>{isMac ? '⌘' : 'Ctrl'} S</Kbd>
             </button>
-            <a className="a-btn a-btn--ghost a-btn--block" href={`/listing/${listing.slug}`} target="_blank" rel="noreferrer">
+            <a className="a-btn a-btn--ghost a-btn--block" href={listingPath(listing.slug)} target="_blank" rel="noreferrer">
               Open preview ↗
             </a>
           </div>

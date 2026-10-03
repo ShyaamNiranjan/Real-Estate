@@ -4,6 +4,7 @@ import { fetchHomeSections, fetchPublishedListings, homeCache, type ListingCard 
 import { brandParts, useDocumentTitle, useSite } from '../lib/site'
 import type { HomeSectionRow } from '../types/database'
 import { BrandIntro, introPending } from './BrandIntro'
+import { SiteDraftBar } from './DraftBar'
 import { FALLBACK_SECTIONS, HomeSections, LOADING_SECTIONS } from './HomeSections'
 import { scrollToAnchor } from './links'
 import { SiteFooter } from './SiteFooter'
@@ -73,6 +74,7 @@ export function Marketplace() {
         />
       )}
       <SiteHeader variant="home" />
+      <SiteDraftBar />
       <Hero
         brand={settings.brand_name}
         headline={settings.hero_headline ?? ''}

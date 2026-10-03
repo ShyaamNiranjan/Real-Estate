@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { brandParts, DEFAULT_BRAND, useDocumentTitle, useSite } from '../lib/site'
 import { asObject, SOCIAL_KEYS, SOCIAL_LABEL, type Socials, type SocialKey } from '../types/content'
 import type { Json, SiteSettingsRow } from '../types/database'
+import { countryInfo, markDone, useProto } from '../lib/prototype'
 import { getSettings, saveSettings, uploadImage } from './api'
 import { ColorField, Field, Kbd, Spinner, errorMessage, isMac, useSaveShortcut, useToast, useUnsavedGuard } from './ui'
 
@@ -40,17 +41,26 @@ function toDraft(row: SiteSettingsRow | null): Draft {
   return d
 }
 
+const STYLE_PRESETS = [
+  { key: 'noir', name: 'Noir', mood: 'Charcoal, champagne gold', primary: '#c4a574', accent: '#0c0e0d', background: '#f5f0e8' },
+  { key: 'coastal', name: 'Coastal', mood: 'Deep sea, sand', primary: '#9fb8c4', accent: '#0f1c24', background: '#eef1f0' },
+  { key: 'terracotta', name: 'Terracotta', mood: 'Warm clay, linen', primary: '#c9845e', accent: '#1d1714', background: '#f4ece4' },
+  { key: 'evergreen', name: 'Evergreen', mood: 'Forest, sage', primary: '#a8b88f', accent: '#111915', background: '#eef0e9' },
+] as const
+
 const HEX = /^#[0-9a-f]{6}$/i
 const URL_RE = /^https?:\/\/\S+$/i
 
 export function Settings() {
-  useDocumentTitle('Site settings')
+  useDocumentTitle('Brand & contact')
   const toast = useToast()
   const { reload } = useSite()
   const [row, setRow] = useState<SiteSettingsRow | null | undefined>(undefined)
   const [draft, setDraft] = useState<Draft>(() => toDraft(null))
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [pendingStyle, setPendingStyle] = useState<string | null>(null)
+  const country = countryInfo(useProto().country)
 
   useEffect(() => {
     getSettings()
@@ -72,7 +82,7 @@ export function Settings() {
   const setSocial = (k: SocialKey, v: string) => setDraft((d) => ({ ...d, socials: { ...d.socials, [k]: v } }))
 
   const save = async () => {
-    if (saving || !dirty) return
+    if (saving || (!dirty && !pendingStyle)) return
     if (!draft.brand_name.trim()) return toast('Brand name is required', 'error')
     for (const k of ['primary_color', 'accent_color', 'background_color'] as const) {
       if (!HEX.test(draft[k])) return toast('Colours must be 6-digit hex values', 'error')
@@ -99,6 +109,12 @@ export function Settings() {
       setRow(saved)
       setDraft(toDraft(saved))
       await reload()
+      if (draft.brand_name.trim()) markDone('details')
+      if (draft.contact_email.trim() || draft.contact_phone.trim()) markDone('contact')
+      if (pendingStyle) {
+        markDone('style')
+        setPendingStyle(null)
+      }
       toast('Settings saved')
     } catch (err) {
       toast(errorMessage(err), 'error')
@@ -135,10 +151,10 @@ export function Settings() {
       <header className="a-page__head">
         <div>
           <p className="a-eyebrow">Brand</p>
-          <h1 className="a-title">Site settings</h1>
+          <h1 className="a-title">Brand &amp; contact</h1>
         </div>
-        <button type="submit" className="a-btn a-btn--primary" disabled={saving || !dirty}>
-          {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
+        <button type="submit" className="a-btn a-btn--primary" disabled={saving || (!dirty && !pendingStyle)}>
+          {saving ? 'Saving…' : dirty || pendingStyle ? 'Save changes' : 'Saved'}
           <Kbd>{isMac ? '⌘' : 'Ctrl'} S</Kbd>
         </button>
       </header>
@@ -163,7 +179,7 @@ export function Settings() {
                 <h2 className="a-card__title">Home hero</h2>
                 <p className="a-muted">
                   Everything below the hero is edited in{' '}
-                  <Link to="/admin/home" className="a-link">
+                  <Link to="/studio/home" className="a-link">
                     Home page
                   </Link>
                   .
@@ -213,9 +229,9 @@ export function Settings() {
           </section>
 
           <section className="a-card">
-            <h2 className="a-card__title">Footer</h2>
+            <h2 className="a-card__title">Licence &amp; footer</h2>
             <div className="a-grid">
-              <Field label="RERA registration number" hint="Shown as “RERA Reg. No. …”">
+              <Field label={country.licenceLabel} hint={`Optional. ${country.hint} Shown in your footer as “${country.licenceShort} …”.`}>
                 {(id) => <input id={id} className="a-input a-input--mono" value={draft.rera_number} onChange={(e) => set('rera_number', e.target.value)} />}
               </Field>
               <Field label="Footer note" hint="A line under the tagline, e.g. viewing hours">
@@ -247,7 +263,37 @@ export function Settings() {
 
         <aside className="a-editor__side">
           <section className="a-card a-card--sticky">
-            <h2 className="a-card__title">Colours</h2>
+            <h2 className="a-card__title">Style</h2>
+            <p className="a-muted">Curated presets. Each one is tested across every section, so the site always looks finished.</p>
+            <div className="a-presets" role="radiogroup" aria-label="Style preset">
+              {STYLE_PRESETS.map((p) => {
+                const on =
+                  draft.primary_color.toLowerCase() === p.primary &&
+                  draft.accent_color.toLowerCase() === p.accent &&
+                  draft.background_color.toLowerCase() === p.background
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    className={`a-preset ${on ? 'is-on' : ''}`}
+                    onClick={() => {
+                      setDraft((d) => ({ ...d, primary_color: p.primary, accent_color: p.accent, background_color: p.background }))
+                      setPendingStyle(p.key)
+                    }}
+                  >
+                    <span className="a-preset__swatch" style={{ background: p.accent }}>
+                      <i style={{ background: p.primary }} />
+                      <i style={{ background: p.background }} />
+                    </span>
+                    <strong>{p.name}</strong>
+                    <small>{p.mood}</small>
+                  </button>
+                )
+              })}
+            </div>
+            <h3 className="a-card__subtitle">Colours</h3>
             <div className="a-form">
               <ColorField label="Accent (gold)" value={draft.primary_color} onChange={(v) => set('primary_color', v)} />
               <ColorField label="Base (charcoal)" value={draft.accent_color} onChange={(v) => set('accent_color', v)} />

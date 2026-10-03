@@ -1,21 +1,20 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { brandParts, useDocumentTitle, useSite } from '../lib/site'
+import { useDocumentTitle, useSite } from '../lib/site'
 import { errorMessage } from './ui'
 
 export function Login() {
-  useDocumentTitle('Admin sign in')
+  useDocumentTitle('Sign in')
   const { settings } = useSite()
-  const brand = brandParts(settings.brand_name).name
   const { session, isAdmin, loading, signIn } = useAuth()
   const location = useLocation()
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const from = (location.state as { from?: string } | null)?.from ?? '/admin'
+  const from = (location.state as { from?: string } | null)?.from ?? '/studio'
 
-  if (!loading && session && isAdmin) return <Navigate to={from.startsWith('/admin') ? from : '/admin'} replace />
+  if (!loading && session && isAdmin) return <Navigate to={from.startsWith('/studio') ? from : '/studio'} replace />
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -37,11 +36,12 @@ export function Login() {
       <div className="a-auth__art" aria-hidden>
         <img src={settings.hero_image_url ?? '/media/sequence/frame-001.jpg'} alt="" />
         <div className="a-auth__art-veil" />
-        <p className="a-auth__art-brand">{brand}</p>
+        <p className="a-auth__art-brand">YE</p>
       </div>
       <div className="a-auth__panel">
-        <p className="a-auth__brand">{brand} · Studio</p>
-        <h1 className="a-auth__title">Sign in to manage the collection.</h1>
+        <p className="a-auth__brand">YE · Studio</p>
+        <h1 className="a-auth__title">Sign in to your workspace.</h1>
+        <p className="a-auth__body">Prototype: sign in with the demo Studio account for {settings.brand_name}.</p>
         <form className="a-auth__form" onSubmit={onSubmit}>
           <label className="a-field">
             <span className="a-field__label">Email</span>
@@ -90,7 +90,7 @@ export function Login() {
           </button>
         </form>
         <Link to="/" className="a-auth__back">
-          ← Back to the site
+          ← Back to YE
         </Link>
       </div>
     </div>

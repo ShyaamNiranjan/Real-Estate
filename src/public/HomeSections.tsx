@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from '
 import { Link } from 'react-router-dom'
 import type { ListingCard } from '../lib/api'
 import { listingFacts } from '../lib/format'
+import { realtorHref, useRealtor } from '../lib/realtor'
 import { useSite } from '../lib/site'
 import { asObject, HOME_ANCHORS, type HomeContent, type HomeItem, type SectionStyle, type SectionTone } from '../types/content'
 import type { HomeSectionPreset, HomeSectionRow } from '../types/database'
@@ -147,7 +148,9 @@ function Head({ id, eyebrow, title, body }: { id: string; eyebrow?: string; titl
   )
 }
 
-function CtaLink({ href, label }: { href: string; label: string }) {
+function CtaLink({ href: rawHref, label }: { href: string; label: string }) {
+  const { base } = useRealtor()
+  const href = realtorHref(rawHref, base)
   const inner = (
     <>
       <span>{label}</span>
@@ -187,6 +190,7 @@ function CtaLink({ href, label }: { href: string; label: string }) {
 
 function Collection({ title, listings, failed }: { title: string; listings: ListingCard[] | null; failed: boolean }) {
   const headRef = useReveal<HTMLDivElement>()
+  const { properties } = useRealtor()
   const count = listings?.length ?? 0
 
   return (
@@ -218,9 +222,17 @@ function Collection({ title, listings, failed }: { title: string; listings: List
           </p>
         ) : (
           <div className={`collection__grid ${count === 1 ? 'is-single' : ''}`}>
-            {listings.map((listing, i) => (
+            {listings.slice(0, 6).map((listing, i) => (
               <ListingTile key={listing.id} listing={listing} index={i} />
             ))}
+          </div>
+        )}
+        {count > 0 && (
+          <div className="collection__more">
+            <Link to={properties} className="collection__all" viewTransition>
+              View all properties
+              <span className="arrow" aria-hidden />
+            </Link>
           </div>
         )}
       </div>
@@ -228,12 +240,13 @@ function Collection({ title, listings, failed }: { title: string; listings: List
   )
 }
 
-function ListingTile({ listing, index }: { listing: ListingCard; index: number }) {
+export function ListingTile({ listing, index }: { listing: ListingCard; index: number }) {
   const ref = useReveal<HTMLAnchorElement>()
+  const { listing: listingPath } = useRealtor()
   const facts = [listing.location, ...listingFacts(listing)].filter(Boolean)
   return (
     <Link
-      to={`/listing/${listing.slug}`}
+      to={listingPath(listing.slug)}
       viewTransition
       className="tile reveal-tile"
       ref={ref}

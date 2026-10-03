@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useProto } from '../lib/prototype'
+import { useRealtor } from '../lib/realtor'
 import { slugify } from '../lib/format'
 import type { ExperienceType, ListingRow, ListingStatus } from '../types/database'
 import { isSlugTaken, updateListing, uploadImage, type ListingUpdate } from './api'
@@ -44,6 +47,8 @@ const text = (v: string) => (v.trim() === '' ? null : v.trim())
 
 export function DetailsTab({ data, onSaved }: { data: EditorData; onSaved: (l: ListingRow) => void }) {
   const toast = useToast()
+  const { listing: listingPath } = useRealtor()
+  const locked = useProto().plan === 'free'
   const { listing, media } = data
   const [draft, setDraft] = useState<Draft>(() => toDraft(listing))
   const [saving, setSaving] = useState(false)
@@ -136,7 +141,7 @@ export function DetailsTab({ data, onSaved }: { data: EditorData; onSaved: (l: L
             <Field label="Title" error={errors.title} wide>
               {(id) => <input id={id} className="a-input a-input--lg" value={draft.title} onChange={(e) => set('title', e.target.value)} />}
             </Field>
-            <Field label="URL slug" error={errors.slug} hint={`/listing/${slugify(draft.slug) || '…'}`}>
+            <Field label="URL slug" error={errors.slug} hint={listingPath(slugify(draft.slug) || '…')}>
               {(id) => (
                 <input
                   id={id}
@@ -223,20 +228,31 @@ export function DetailsTab({ data, onSaved }: { data: EditorData; onSaved: (l: L
           <fieldset className="a-radio-list">
             <legend className="visually-hidden">Status</legend>
             {(['draft', 'preview', 'published'] as ListingStatus[]).map((s) => (
-              <label key={s} className={`a-radio ${draft.status === s ? 'is-on' : ''}`}>
-                <input type="radio" name="status" checked={draft.status === s} onChange={() => set('status', s)} />
+              <label key={s} className={`a-radio ${draft.status === s ? 'is-on' : ''} ${locked && s === 'published' ? 'is-locked' : ''}`}>
+                <input
+                  type="radio"
+                  name="status"
+                  checked={draft.status === s}
+                  disabled={locked && s === 'published'}
+                  onChange={() => set('status', s)}
+                />
                 <span className={`a-status__dot a-status--${s}`} aria-hidden />
                 <span>
                   <strong>{STATUS_LABEL[s]}</strong>
                   <small>
                     {s === 'draft' && 'Work in progress. Admins only.'}
                     {s === 'preview' && 'Ready for review. Admins only.'}
-                    {s === 'published' && 'Live in the public collection.'}
+                    {s === 'published' && (locked ? 'Subscribe to publish and share.' : 'Live in the public collection.')}
                   </small>
                 </span>
               </label>
             ))}
           </fieldset>
+          {locked && (
+            <p className="a-note">
+              This is your free private listing. <Link to="/studio/plan" className="a-link">Choose a plan</Link> to publish it.
+            </p>
+          )}
 
           <h3 className="a-card__subtitle">Experience</h3>
           <div className="a-seg" role="radiogroup" aria-label="Experience type">
@@ -256,7 +272,7 @@ export function DetailsTab({ data, onSaved }: { data: EditorData; onSaved: (l: L
               {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
               <Kbd>{isMac ? '⌘' : 'Ctrl'} S</Kbd>
             </button>
-            <a className="a-btn a-btn--ghost a-btn--block" href={`/listing/${listing.slug}`} target="_blank" rel="noreferrer">
+            <a className="a-btn a-btn--ghost a-btn--block" href={listingPath(listing.slug)} target="_blank" rel="noreferrer">
               Open preview ↗
             </a>
           </div>
