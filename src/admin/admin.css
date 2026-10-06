@@ -1704,6 +1704,19 @@ select.a-input {
   margin-top: 0;
 }
 
+.a-filming {
+  margin: 0.8rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--a-ink-2, inherit);
+}
+
+.a-upload-frames .a-note ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
 .a-dropzone {
   padding: 1rem 1rem 1.1rem;
   border: 1.5px dashed var(--a-line-strong);

@@ -5,7 +5,7 @@ import { BEATS_END, asMobileMode, asObject, beatEnd, type ExperienceConfig, type
 import type { Json, ListingMediaRow, ListingRow, MediaAspect } from '../types/database'
 import { createMedia, deleteMedia, updateListing, updateMedia, uploadFrameSequence } from './api'
 import type { EditorData } from './ListingEditor'
-import { VIDEO_PRESETS, extractFrames, probeVideo } from './videoFrames'
+import { VIDEO_PRESETS, extractFrames, probeVideo, type VideoInfo } from './videoFrames'
 import { ConfirmButton, Field, Kbd, errorMessage, isMac, useSaveShortcut, useToast, useUnsavedGuard } from './ui'
 
 type Props = {
@@ -269,6 +269,17 @@ function useFileDrop(onFiles: (files: File[]) => void, enabled: boolean) {
   return { isOver, props }
 }
 
+/** Checks the browser can make before upload; shake and brightness are measured by the processing worker. */
+function footageWarnings(info: VideoInfo) {
+  const warnings: string[] = []
+  const shortSide = Math.min(info.width, info.height)
+  if (info.duration < 6) warnings.push('This video is under 6 seconds, so the walkthrough will feel abrupt.')
+  if (info.duration > 90) warnings.push('This video is over 90 seconds; a tighter 10–40 second take keeps buyers scrolling.')
+  if (shortSide < 1080) warnings.push(`It was filmed at ${info.width}×${info.height}. Film in 4K for sharp frames on large screens.`)
+  if (info.aspect === 'square') warnings.push('Square video is cropped on phones and desktops. Film wide for desktop or tall for phones.')
+  return warnings
+}
+
 function videoLabel(job: VideoJob) {
   if (job.phase === 'reading') return 'Reading video…'
   const pct = job.total ? Math.round((job.done / job.total) * 100) : 0
@@ -301,6 +312,7 @@ function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: 
   }
 
   const [videoJob, setVideoJob] = useState<VideoJob | null>(null)
+  const [videoWarnings, setVideoWarnings] = useState<string[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const busy = Boolean(progress || videoJob)
 
@@ -363,8 +375,10 @@ function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: 
     const controller = new AbortController()
     abortRef.current = controller
     setVideoJob({ phase: 'reading', done: 0, total: 0 })
+    setVideoWarnings([])
     try {
       const info = await probeVideo(file)
+      setVideoWarnings(footageWarnings(info))
       const aspect: MediaAspect = info.aspect === 'square' ? 'landscape' : info.aspect
       const preset = VIDEO_PRESETS[aspect]
       const frames = await extractFrames(
@@ -416,6 +430,22 @@ function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: 
             Drop an MP4 or WebM here, or choose one. The walkthrough frames are extracted in your browser, then uploaded — keep this tab open until it
             finishes. Wide videos become the desktop sequence, tall phone videos the mobile one; either works on both if it is the only one.
           </p>
+          <ul className="a-filming">
+            <li>Use a gimbal, or your phone's stabilised / action mode.</li>
+            <li>Walk slowly at one steady pace. No stopping, no zooming.</li>
+            <li>Film in 4K at 60fps, with every light on and exposure locked.</li>
+            <li>One continuous take, 10–40 seconds, entrance to the best room.</li>
+          </ul>
+          {videoWarnings.length > 0 && (
+            <div className="a-note a-note--warn">
+              <strong>Before you publish:</strong>
+              <ul>
+                {videoWarnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         <div className="a-inline-form">
           <label className={`a-btn a-btn--primary a-file${busy ? ' is-disabled' : ''}`}>

@@ -7,13 +7,12 @@ type Variant = 'landscape' | 'portrait'
 type Layout = 'cover' | 'rotate' | 'fit'
 
 const STAGE_BG = '#0c0e0d'
-const HERO_UNTIL = 0.04
+/** The camera moves from the first scroll; the hero copy stays up a little longer as it does. */
+const HERO_UNTIL = 0.06
 const BEATS_UNTIL = BEATS_END
 const COMPLETE_AT = 0.999
 /** In rotate mode, "Turn upright to continue" appears from here until the stage releases. */
 const END_CUE_AT = 0.9
-/** First ~2–3 scroll gestures hold on the hero with zero camera movement. */
-const HOLD_VIEWPORTS = 0.7
 /** Scroll distance of the whole walkthrough, independent of how many frames a listing has. */
 const TRACK_PX: Record<Variant, number> = { landscape: 2880, portrait: 2640 }
 /** Fit mode: share of the spare height that goes above the video (the rest is below). Mirrored in CSS object-position. */
@@ -233,16 +232,10 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
 
     // Orientation changes: remember where the visitor was, keep the last frame up while the
     // new layout settles, then put them back at the same point of the walkthrough.
-    type Snapshot = { progress: number; holdPart: number }
     let lastW = window.innerWidth
-    let snap: Snapshot | null = null
-    let pending: Snapshot | null = null
+    let snap: number | null = null
+    let pending: number | null = null
     let settleTimer = 0
-
-    const holdRatioFor = (maxScroll: number) => {
-      const base = layoutRef.current === 'rotate' ? window.innerWidth : window.innerHeight
-      return Math.min(0.32, (base * HOLD_VIEWPORTS) / maxScroll)
-    }
 
     const sizeCanvas = () => {
       const w = stage.clientWidth
@@ -338,17 +331,15 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
       settleTimer = 0
       const p = pending
       pending = null
-      if (!p) return
+      if (p === null) return
       const maxScroll = Math.max(1, track.offsetHeight - window.innerHeight)
-      const hold = holdRatioFor(maxScroll)
-      const raw = p.progress > 0 ? hold + p.progress * (1 - hold) : p.holdPart * hold
-      window.scrollTo(0, Math.round(raw * maxScroll))
+      window.scrollTo(0, Math.round(p * maxScroll))
       schedule()
     }
 
     const settle = (delay: number) => {
-      if (!pending && snap) pending = snap
-      if (!pending) return
+      if (pending === null && snap !== null) pending = snap
+      if (pending === null) return
       window.clearTimeout(settleTimer)
       settleTimer = window.setTimeout(restore, delay)
     }
@@ -374,17 +365,13 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
         lastW = window.innerWidth
         settle(200)
       }
-      if (pending) {
+      if (pending !== null) {
         paint(lastTarget)
         return
       }
 
-      const raw = Math.min(1, Math.max(0, window.scrollY / maxScroll))
-      // Dead-zone at the start: first ~2–3 scrolls keep frame 0 + hero locked
-      const holdRatio = holdRatioFor(maxScroll)
-      const progress =
-        raw <= holdRatio ? 0 : Math.min(1, (raw - holdRatio) / (1 - holdRatio))
-      snap = progress < COMPLETE_AT ? { progress, holdPart: holdRatio > 0 ? Math.min(1, raw / holdRatio) : 1 } : null
+      const progress = Math.min(1, Math.max(0, window.scrollY / maxScroll))
+      snap = progress < COMPLETE_AT ? progress : null
 
       const done = progress >= COMPLETE_AT
       if (done !== complete) {
@@ -405,8 +392,8 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
           stage.classList.toggle('is-ending', isEnding)
         }
         if (!swiped) {
-          if (startRaw < 0) startRaw = raw
-          else if (Math.abs(raw - startRaw) > 0.01) {
+          if (startRaw < 0) startRaw = progress
+          else if (Math.abs(progress - startRaw) > 0.01) {
             swiped = true
             stage.classList.add('has-swiped')
             writeSwiped()

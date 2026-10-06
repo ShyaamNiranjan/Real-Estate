@@ -2,7 +2,7 @@ import type { MediaAspect } from '../types/database'
 
 export const VIDEO_PRESETS: Record<MediaAspect, { frames: number; width: number; quality: number }> = {
   landscape: { frames: 240, width: 1920, quality: 0.82 },
-  portrait: { frames: 120, width: 900, quality: 0.8 },
+  portrait: { frames: 240, width: 720, quality: 0.8 },
   square: { frames: 180, width: 1280, quality: 0.82 },
 }
 
