@@ -628,3 +628,88 @@ html.stage-rotated .preview-bar {
   }
 }
 
+
+/* --- Side mode: portrait-only footage on a wide screen ---
+   The tall video stays sharp in its own panel (never cropped up to 16:9), and the
+   hero and beats move into the open column beside it. */
+.scroll-track.is-side {
+  --panel-h: calc(100vh - 9rem);
+  --panel-w: calc(var(--panel-h) * 9 / 16);
+  --panel-x: calc(68% - var(--panel-w) / 2);
+}
+
+.scroll-track.is-side .scroll-stage,
+.scroll-track.is-side .scroll-track__end {
+  background:
+    radial-gradient(620px 520px at 68% 55%, rgba(196, 165, 116, 0.13), transparent 70%),
+    linear-gradient(180deg, #111413, #0b0d0c);
+}
+
+.scroll-track.is-side .scroll-stage__canvas,
+.scroll-track.is-side .scroll-track__end img {
+  inset: auto;
+  top: 5.75rem;
+  left: var(--panel-x);
+  width: var(--panel-w);
+  height: var(--panel-h);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(250, 248, 244, 0.08),
+    0 40px 90px rgba(0, 0, 0, 0.55);
+}
+
+.scroll-track.is-side .scroll-track__end img {
+  position: absolute;
+  object-fit: cover;
+}
+
+.scroll-track.is-side .scroll-veil {
+  display: none;
+}
+
+.scroll-track.is-side .scroll-hero {
+  right: auto;
+  width: calc(var(--panel-x) - 2rem);
+  align-items: flex-start;
+  text-align: left;
+  padding-left: calc(var(--pad-x) + var(--safe-left));
+  padding-right: 0;
+}
+
+.scroll-track.is-side .scroll-hero__brand {
+  font-size: clamp(2.6rem, 5vw, 5rem);
+  letter-spacing: 0.16em;
+  text-indent: 0;
+}
+
+.scroll-track.is-side .scroll-hero__hint {
+  left: calc(var(--pad-x) + var(--safe-left));
+  align-items: flex-start;
+}
+
+.scroll-track.is-side .beat,
+.scroll-track.is-side .beat--left,
+.scroll-track.is-side .beat--right {
+  left: calc(var(--pad-x) + var(--safe-left));
+  right: auto;
+  width: min(30rem, calc(var(--panel-x) - var(--pad-x) - 3rem));
+  text-align: left;
+}
+
+.scroll-track.is-side .beat__label {
+  margin-bottom: 0.8rem;
+  font-size: 0.7rem;
+}
+
+.scroll-track.is-side .beat__text {
+  font-size: clamp(1.7rem, 2.8vw, 2.6rem);
+  line-height: 1.2;
+  text-shadow: none;
+}
+
+.scroll-track.is-side .scroll-loader {
+  left: var(--panel-x);
+  right: auto;
+  width: var(--panel-w);
+  bottom: 2.25rem;
+}

@@ -3,8 +3,11 @@ import { expandFramePattern, joinUrl } from '../lib/format'
 import { BEATS_END, beatEnd, type ExperienceHero, type FrameSequence, type MobileMode, type ScrollBeat } from '../types/content'
 
 type Variant = 'landscape' | 'portrait'
-/** cover: full-bleed crop (desktop, landscape, portrait sequences). rotate/fit: landscape frames on an upright phone. */
-type Layout = 'cover' | 'rotate' | 'fit'
+/**
+ * cover: full-bleed crop (desktop, landscape, portrait sequences). rotate/fit: landscape frames on an upright phone.
+ * side: portrait-only footage on a wide screen, shown as a tall panel with the copy beside it.
+ */
+type Layout = 'cover' | 'rotate' | 'fit' | 'side'
 
 const STAGE_BG = '#0c0e0d'
 /** The camera moves from the first scroll; the hero copy stays up a little longer as it does. */
@@ -39,7 +42,8 @@ function getView(): View {
   return { variant: w > h || w > 900 ? 'landscape' : 'portrait', portrait: h > w }
 }
 
-function resolveLayout(view: View, hasPortrait: boolean, mode: MobileMode): Layout {
+function resolveLayout(view: View, hasPortrait: boolean, hasLandscape: boolean, mode: MobileMode): Layout {
+  if (!view.portrait && !hasLandscape && hasPortrait) return 'side'
   if (!view.portrait || hasPortrait || mode === 'fill') return 'cover'
   if (mode === 'fit') return 'fit'
   // A portrait desktop window cannot be tilted, so only touch devices rotate.
@@ -120,7 +124,7 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
   const { variant } = view
 
   const seq = (variant === 'portrait' ? sequences.portrait ?? sequences.landscape : sequences.landscape ?? sequences.portrait)!
-  const layout = resolveLayout(view, Boolean(sequences.portrait), mobileMode)
+  const layout = resolveLayout(view, Boolean(sequences.portrait), Boolean(sequences.landscape), mobileMode)
   const rotate = layout === 'rotate'
   const total = Math.max(1, seq.frameCount)
   // Rotate mode plays the landscape walkthrough, so it gets the landscape scroll length.
@@ -238,8 +242,9 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
     let settleTimer = 0
 
     const sizeCanvas = () => {
-      const w = stage.clientWidth
-      const h = stage.clientHeight
+      const box = drawnLayout === 'side' ? canvas : stage
+      const w = box.clientWidth
+      const h = box.clientHeight
       if (w === cssW && h === cssH) return false
       cssW = w
       cssH = h
@@ -316,7 +321,7 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
       const end = endRef.current
       if (!end) return
       // Rotated, the stage's width is the viewport's height.
-      const endH = drawnLayout === 'rotate' ? cssW : cssH
+      const endH = drawnLayout === 'rotate' ? cssW : drawnLayout === 'side' ? stage.clientHeight : cssH
       if (end.dataset.top !== String(maxScroll)) {
         end.dataset.top = String(maxScroll)
         end.style.top = `${maxScroll}px`
@@ -543,7 +548,7 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
     }
   }, [rotate])
 
-  const trackClass = `scroll-track${rotate ? ' is-rotated' : ''}${layout === 'fit' ? ' is-fit' : ''}`
+  const trackClass = `scroll-track${rotate ? ' is-rotated' : ''}${layout === 'fit' ? ' is-fit' : ''}${layout === 'side' ? ' is-side' : ''}`
 
   return (
     <div

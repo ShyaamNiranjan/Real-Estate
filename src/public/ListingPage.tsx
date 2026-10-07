@@ -77,6 +77,9 @@ export function ListingPage() {
  * `?draft=1` renders the Studio's AI draft (kept in this browser) inside the real page, with a still
  * frame instead of the walkthrough; `&edit=1` makes the text editable in place.
  */
+/** Prototype: `?stage=portrait` swaps in a phone-recorded (9:16 only) walkthrough to show the desktop side layout. */
+const PORTRAIT_DEMO: FrameSequence = { baseUrl: '/media/sequence-portrait', pattern: 'frame-{###}.jpg', frameCount: 240 }
+
 function ListingOrDraft({ listing }: { listing: ListingWithRelations }) {
   const [params] = useSearchParams()
   const draftMode = params.get('draft') === '1'
@@ -192,6 +195,8 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
   const hasGallery = sections.some((s) => s.preset === 'gallery')
   const cover = listing.cover_image_url ?? gallery[0]?.src ?? null
 
+  const portraitDemo = new URLSearchParams(window.location.search).get('stage') === 'portrait'
+
   const firstFrame = useMemo(() => {
     const seq = sequences.landscape ?? sequences.portrait
     return seq ? joinUrl(seq.baseUrl, expandFramePattern(seq.pattern, 1)) : null
@@ -206,8 +211,8 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
         <DraftStill listing={listing} cover={cover} firstFrame={immersive ? firstFrame : null} />
       ) : immersive ? (
         <ScrollExperience
-          key={listing.id}
-          sequences={sequences}
+          key={`${listing.id}${portraitDemo ? ':portrait' : ''}`}
+          sequences={portraitDemo ? { portrait: PORTRAIT_DEMO } : sequences}
           label={`${listing.title} walkthrough`}
           hero={{
             brand: experience.hero?.brand ?? listing.title,
