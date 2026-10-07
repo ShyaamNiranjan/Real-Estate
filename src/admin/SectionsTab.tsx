@@ -25,6 +25,7 @@ const DEFAULTS: Record<SectionPreset, { title: string; layout: SectionLayout; co
   hero: { title: '', layout: 'full', content: {}, style: { tone: 'dark' } },
   cta: { title: 'Arrange a private viewing.', layout: 'default', content: { ctaLabel: 'Enquire', ctaAction: 'enquiry' }, style: { tone: 'dark' } },
   custom: { title: '', layout: 'default', content: {}, style: {} },
+  faq: { title: 'Questions buyers ask', layout: 'default', content: { items: [{ title: '', body: '' }] }, style: {} },
 }
 
 type Props = {

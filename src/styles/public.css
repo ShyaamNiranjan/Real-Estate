@@ -2790,3 +2790,111 @@ html.is-intro {
 .site-footer__made:hover {
   color: var(--gold);
 }
+
+/* FAQ section — visible question/answer pairs (also emitted as FAQPage structured data) */
+.faq {
+  margin: 0;
+  border-top: 1px solid var(--sec-line);
+}
+
+.faq__item {
+  padding: 1.4rem 0;
+  border-bottom: 1px solid var(--sec-line);
+}
+
+.faq__q {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.faq__a {
+  margin: 0.55rem 0 0;
+  max-width: 62ch;
+  font-weight: 300;
+  line-height: 1.72;
+  color: var(--sec-soft);
+}
+
+/* Customise mode: in-place editing on the real page */
+.is-editable {
+  outline: 1px dashed transparent;
+  outline-offset: 6px;
+  border-radius: 2px;
+  cursor: text;
+  transition: outline-color 0.15s ease, background-color 0.15s ease;
+}
+
+.is-editable:hover {
+  outline-color: color-mix(in srgb, var(--sec-accent, #c4a574) 70%, transparent);
+}
+
+.is-editable:focus {
+  outline: 1.5px solid var(--sec-accent, #c4a574);
+  background: color-mix(in srgb, var(--sec-accent, #c4a574) 8%, transparent);
+}
+
+.is-editable:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.38;
+  font-style: italic;
+}
+
+.page--draft .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* Editor stand-in for the walkthrough: a still frame, no frames loaded */
+.draft-still {
+  position: relative;
+  height: min(78svh, 760px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--charcoal);
+  color: var(--white);
+  text-align: center;
+}
+
+.draft-still img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.draft-still__veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(12, 14, 13, 0.35), rgba(12, 14, 13, 0.6));
+}
+
+.draft-still__copy {
+  position: relative;
+  padding: 0 var(--pad-x);
+}
+
+.draft-still__copy h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 8vw, 5.5rem);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+}
+
+.draft-still__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgba(250, 248, 244, 0.35);
+  border-radius: 999px;
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}

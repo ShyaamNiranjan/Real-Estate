@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ScrollExperience } from '../components/ScrollExperience'
 import { fetchListingBySlug } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { listingFacts } from '../lib/format'
+import { expandFramePattern, joinUrl, listingFacts } from '../lib/format'
+import { applyEdit, draftToRows, factsFromListing, listingJsonLd, loadDraft, saveDraft, type ListingDraft } from '../lib/listingCopy'
 import { useProto } from '../lib/prototype'
 import { useRealtor } from '../lib/realtor'
 import { useDocumentTitle } from '../lib/site'
@@ -11,7 +12,7 @@ import { asMobileMode, asObject, type ExperienceConfig, type FrameSequence, type
 import type { ListingMediaRow } from '../types/database'
 import { EnquiryForm } from './EnquiryForm'
 import { NotFound } from './NotFound'
-import { Sections } from './Sections'
+import { EditContext, Editable, Sections, type EditCommit } from './Sections'
 import { SiteFooter } from './SiteFooter'
 import { SiteHeader } from './SiteHeader'
 import { useReveal } from './useReveal'
@@ -68,10 +69,92 @@ export function ListingPage() {
         href={base}
       />
     )
-  return <Listing listing={state.listing} />
+  return <ListingOrDraft listing={state.listing} />
 }
 
-function Listing({ listing }: { listing: ListingWithRelations }) {
+/**
+ * `?draft=1` renders the Studio's AI draft (kept in this browser) inside the real page, with a still
+ * frame instead of the walkthrough; `&edit=1` makes the text editable in place.
+ */
+function ListingOrDraft({ listing }: { listing: ListingWithRelations }) {
+  const [params] = useSearchParams()
+  const draftMode = params.get('draft') === '1'
+  const editing = draftMode && params.get('edit') === '1'
+  const [draft, setDraft] = useState<ListingDraft | null>(() => (draftMode ? loadDraft(listing.id) : null))
+
+  useEffect(() => {
+    if (!draftMode) return
+    const sync = () => setDraft(loadDraft(listing.id))
+    sync()
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [draftMode, listing.id])
+
+  const commit = useCallback<EditCommit>(
+    (sectionId, path, value) => {
+      setDraft((d) => {
+        if (!d) return d
+        const next = applyEdit(d, sectionId, path, value)
+        saveDraft(next)
+        window.parent?.postMessage({ type: 'ye:draft-edited', listingId: listing.id }, window.location.origin)
+        return next
+      })
+    },
+    [listing.id],
+  )
+
+  if (!draftMode || !draft) return <Listing listing={listing} />
+  const view: ListingWithRelations = {
+    ...listing,
+    subtitle: draft.intro.tagline || listing.subtitle,
+    summary: draft.intro.summary || listing.summary,
+    page_sections: draftToRows(draft),
+  }
+  return (
+    <EditContext.Provider value={editing ? commit : null}>
+      <Listing listing={view} draft={draft} />
+    </EditContext.Provider>
+  )
+}
+
+function DraftSeo({ draft, listing }: { draft: ListingDraft; listing: ListingWithRelations }) {
+  useEffect(() => {
+    const previous = document.title
+    if (draft.seo.title) document.title = draft.seo.title
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+    const created = !meta
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.name = 'description'
+      document.head.appendChild(meta)
+    }
+    const prevDescription = meta.content
+    meta.content = draft.seo.description
+    return () => {
+      document.title = previous
+      if (created) meta.remove()
+      else meta.content = prevDescription
+    }
+  }, [draft.seo.title, draft.seo.description])
+  const ld = listingJsonLd(draft, factsFromListing(listing), window.location.href.split('?')[0])
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+}
+
+function DraftStill({ listing, cover, firstFrame }: { listing: ListingWithRelations; cover: string | null; firstFrame: string | null }) {
+  const image = firstFrame ?? cover
+  return (
+    <section className="draft-still" aria-label="Walkthrough">
+      {image && <img src={image} alt="" decoding="async" />}
+      <div className="draft-still__veil" aria-hidden />
+      <div className="draft-still__copy">
+        <h1>{listing.title}</h1>
+        <span className="draft-still__tag">Walkthrough plays here on the live page</span>
+      </div>
+    </section>
+  )
+}
+
+function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: ListingDraft }) {
   const enquire = useCallback(() => {
     document.getElementById('enquire')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
@@ -108,12 +191,19 @@ function Listing({ listing }: { listing: ListingWithRelations }) {
   const hasGallery = sections.some((s) => s.preset === 'gallery')
   const cover = listing.cover_image_url ?? gallery[0]?.src ?? null
 
-  return (
-    <div className={`page page--listing ${immersive ? 'is-immersive' : 'is-photo'}`}>
-      <SiteHeader variant="listing" onEnquire={enquire} />
-      <PreviewBar listing={listing} />
+  const firstFrame = useMemo(() => {
+    const seq = sequences.landscape ?? sequences.portrait
+    return seq ? joinUrl(seq.baseUrl, expandFramePattern(seq.pattern, 1)) : null
+  }, [sequences])
 
-      {immersive ? (
+  return (
+    <div className={`page page--listing ${immersive && !draft ? 'is-immersive' : 'is-photo'}${draft ? ' page--draft' : ''}`}>
+      <SiteHeader variant="listing" onEnquire={enquire} />
+      {draft ? <DraftSeo draft={draft} listing={listing} /> : <PreviewBar listing={listing} />}
+
+      {draft ? (
+        <DraftStill listing={listing} cover={cover} firstFrame={immersive ? firstFrame : null} />
+      ) : immersive ? (
         <ScrollExperience
           key={listing.id}
           sequences={sequences}
@@ -207,8 +297,11 @@ function ListingIntro({
           ) : (
             <p className="eyebrow">Overview</p>
           )}
-          {immersive && listing.subtitle && <p className="listing-intro__subtitle">{listing.subtitle}</p>}
-          {listing.summary && <p className="listing-intro__summary">{listing.summary}</p>}
+          {immersive && (
+            <Editable sectionId="intro" path="tagline" value={listing.subtitle} className="listing-intro__subtitle" placeholder="Add a tagline" />
+          )}
+          <Editable sectionId="intro" path="summary" value={listing.summary} className="listing-intro__summary" placeholder="Add a short summary" />
+
         </div>
         <div className="listing-intro__aside">
           {listing.price_label && (

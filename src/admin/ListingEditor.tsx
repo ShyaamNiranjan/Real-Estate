@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useParams } from 'react-router-dom'
 import { useDocumentTitle } from '../lib/site'
 import { useRealtor } from '../lib/realtor'
 import type { ListingMediaRow, ListingRow, PageSectionRow } from '../types/database'
+import { AiSections } from './AiSections'
 import { deleteListing, getListing, listMedia, listSections } from './api'
 import { DetailsTab } from './DetailsTab'
 import { ExperienceTab } from './ExperienceTab'
@@ -32,6 +33,7 @@ export function ListingEditor() {
   const { listing: listingPath } = useRealtor()
   const [data, setData] = useState<EditorData | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
+  const [classic, setClassic] = useState(false)
 
   useDocumentTitle(data ? `Edit · ${data.listing.title}` : 'Edit listing')
 
@@ -127,7 +129,17 @@ export function ListingEditor() {
 
       {activeTab === 'details' && <DetailsTab data={data} onSaved={setListing} />}
       {activeTab === 'media' && <MediaTab data={data} setMedia={setMedia} onListing={setListing} />}
-      {activeTab === 'sections' && <SectionsTab data={data} setSections={setSections} />}
+      {activeTab === 'sections' &&
+        (classic ? (
+          <>
+            <button type="button" className="a-link" onClick={() => setClassic(false)}>
+              ← Back to AI sections
+            </button>
+            <SectionsTab data={data} setSections={setSections} />
+          </>
+        ) : (
+          <AiSections data={data} onClassic={() => setClassic(true)} />
+        ))}
       {activeTab === 'experience' && <ExperienceTab data={data} onListing={setListing} setMedia={setMedia} />}
     </div>
   )

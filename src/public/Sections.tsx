@@ -1,9 +1,13 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { createContext, useContext, type ClipboardEvent, type CSSProperties, type ReactNode } from 'react'
 import { asObject, type SectionContent, type SectionStyle } from '../types/content'
 import type { PageSectionRow } from '../types/database'
 import { Gallery, type GalleryImage } from './Gallery'
 import { SAFE_HREF } from './links'
 import { useReveal } from './useReveal'
+
+/** Set while the agent is customising: text becomes editable in place. `path` is a dotted field path. */
+export type EditCommit = (sectionId: string, path: string, value: string) => void
+export const EditContext = createContext<EditCommit | null>(null)
 
 type Props = {
   sections: PageSectionRow[]
@@ -40,6 +44,75 @@ export function Paragraphs({ text, className }: { text: string | null; className
           <p key={i}>{p}</p>
         ))}
     </div>
+  )
+}
+
+function pastePlain(e: ClipboardEvent<HTMLElement>) {
+  e.preventDefault()
+  document.execCommand('insertText', false, e.clipboardData.getData('text/plain'))
+}
+
+/**
+ * Plain text normally (hidden when empty). While customising it is contentEditable, shows a
+ * placeholder when empty, and commits on blur. Keyed by value so React never fights the edits.
+ */
+export function Editable({
+  sectionId,
+  path,
+  value,
+  tag: Tag = 'p',
+  className,
+  placeholder,
+  multiline = false,
+}: {
+  sectionId: string
+  path: string
+  value: string | null | undefined
+  tag?: 'p' | 'h1' | 'h2' | 'h3' | 'dt' | 'dd' | 'span' | 'div'
+  className?: string
+  placeholder: string
+  multiline?: boolean
+}) {
+  const commit = useContext(EditContext)
+  const text = value ?? ''
+  if (!commit) {
+    if (!text) return null
+    return multiline ? <Paragraphs text={text} className={className ?? ''} /> : <Tag className={className}>{text}</Tag>
+  }
+  const El = multiline ? 'div' : Tag
+  return (
+    <El
+      key={text}
+      className={`${className ?? ''} is-editable`}
+      contentEditable
+      suppressContentEditableWarning
+      data-placeholder={placeholder}
+      spellCheck
+      onPaste={pastePlain}
+      onKeyDown={
+        multiline
+          ? undefined
+          : (e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                e.currentTarget.blur()
+              }
+            }
+      }
+      onBlur={(e) => {
+        const raw = e.currentTarget.innerText
+        const next = multiline
+          ? raw
+              .split(/\n\s*\n|\n/)
+              .map((p) => p.trim())
+              .filter(Boolean)
+              .join('\n\n')
+          : raw.replace(/\s+/g, ' ').trim()
+        if (next !== text) commit(sectionId, path, next)
+      }}
+    >
+      {multiline ? text.split(/\n{2,}/).map((p, i) => <p key={i}>{p}</p>) : text}
+    </El>
   )
 }
 
@@ -82,13 +155,15 @@ function Section({
   fallbackImage: string | null
   onEnquire: () => void
 }) {
+  const editing = Boolean(useContext(EditContext))
   const style = asObject<SectionStyle>(section.style)
   const content = asObject<SectionContent>(section.content)
   const items = Array.isArray(content.items) ? content.items : []
+  const id = section.id
   const head = (
     <>
-      {content.eyebrow && <p className="eyebrow">{content.eyebrow}</p>}
-      {section.title && <h2 className="sec__title">{section.title}</h2>}
+      <Editable sectionId={id} path="content.eyebrow" value={content.eyebrow} className="eyebrow" placeholder="Add a label" />
+      <Editable sectionId={id} path="title" value={section.title} tag="h2" className="sec__title" placeholder="Add a heading" />
     </>
   )
 
@@ -101,7 +176,7 @@ function Section({
           <div className="sec__veil" aria-hidden />
           <div className="sec__inner">
             {head}
-            <Paragraphs text={section.body} className="sec__body" />
+            <Editable sectionId={id} path="body" value={section.body} className="sec__body" placeholder="Add a line of text" multiline />
           </div>
         </section>
       )
@@ -114,7 +189,7 @@ function Section({
           <div className="sec__split">
             <div className="sec__head">{head}</div>
             <div>
-              <Paragraphs text={section.body} className="sec__body sec__body--lead" />
+              <Editable sectionId={id} path="body" value={section.body} className="sec__body sec__body--lead" placeholder="Add a paragraph" multiline />
               {content.image && (
                 <figure className="sec__figure">
                   <img src={content.image} alt={content.caption ?? ''} loading="lazy" decoding="async" />
@@ -131,12 +206,14 @@ function Section({
         <Shell section={section} style={style}>
           {head}
           <dl className="specs">
-            {items.map((item, i) => (
-              <div className="specs__item" key={i}>
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </div>
-            ))}
+            {items.map((item, i) =>
+              item.label || item.value || editing ? (
+                <div className="specs__item" key={i}>
+                  <Editable sectionId={id} path={`content.items.${i}.label`} value={item.label} tag="dt" placeholder="Label" />
+                  <Editable sectionId={id} path={`content.items.${i}.value`} value={item.value} tag="dd" placeholder="Value" />
+                </div>
+              ) : null,
+            )}
           </dl>
         </Shell>
       )
@@ -146,7 +223,7 @@ function Section({
         <Shell section={section} style={style}>
           <div className="sec__head sec__head--row">
             <div>{head}</div>
-            <Paragraphs text={section.body} className="sec__body" />
+            <Editable sectionId={id} path="body" value={section.body} className="sec__body" placeholder="Add an introduction" multiline />
           </div>
           <div className={`feature-grid ${items.some((t) => t.image) ? 'has-media' : ''}`}>
             {items.map((item, i) => (
@@ -157,10 +234,27 @@ function Section({
                   </div>
                 )}
                 <span className="feature__index">{String(i + 1).padStart(2, '0')}</span>
-                {item.title && <h3 className="feature__title">{item.title}</h3>}
-                {item.body && <p className="feature__body">{item.body}</p>}
+                <Editable sectionId={id} path={`content.items.${i}.title`} value={item.title} tag="h3" className="feature__title" placeholder="Title" />
+                <Editable sectionId={id} path={`content.items.${i}.body`} value={item.body} className="feature__body" placeholder="Describe it in a sentence" />
               </article>
             ))}
+          </div>
+        </Shell>
+      )
+
+    case 'faq':
+      return (
+        <Shell section={section} style={style}>
+          <div className="sec__split">
+            <div className="sec__head">{head}</div>
+            <dl className="faq">
+              {items.map((item, i) => (
+                <div className="faq__item" key={i}>
+                  <Editable sectionId={id} path={`content.items.${i}.title`} value={item.title} tag="dt" className="faq__q" placeholder="Question" />
+                  <Editable sectionId={id} path={`content.items.${i}.body`} value={item.body} tag="dd" className="faq__a" placeholder="Answer" />
+                </div>
+              ))}
+            </dl>
           </div>
         </Shell>
       )
@@ -173,7 +267,7 @@ function Section({
       if (!images.length) return null
       return (
         <Shell section={section} style={style}>
-          {(section.title || content.eyebrow) && <div className="sec__head">{head}</div>}
+          {(section.title || content.eyebrow || editing) && <div className="sec__head">{head}</div>}
           <Gallery images={images} />
         </Shell>
       )
@@ -182,19 +276,24 @@ function Section({
     case 'cta': {
       const label = content.ctaLabel || 'Enquire'
       const isLink = content.ctaAction === 'link' && content.href && SAFE_HREF.test(content.href)
+      const labelEl = editing ? (
+        <Editable sectionId={id} path="content.ctaLabel" value={label} tag="span" placeholder="Button label" />
+      ) : (
+        label
+      )
       return (
         <Shell section={section} style={style}>
           <div className="cta">
             {head}
-            <Paragraphs text={section.body} className="sec__body" />
-            {isLink ? (
+            <Editable sectionId={id} path="body" value={section.body} className="sec__body" placeholder="Add a sentence" multiline />
+            {isLink && !editing ? (
               <a className="button button--light" href={content.href}>
-                {label}
+                {labelEl}
                 <span className="arrow" aria-hidden />
               </a>
             ) : (
-              <button type="button" className="button button--light" onClick={onEnquire}>
-                {label}
+              <button type="button" className="button button--light" onClick={editing ? undefined : onEnquire}>
+                {labelEl}
                 <span className="arrow" aria-hidden />
               </button>
             )}
