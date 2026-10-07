@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from 'react'
 import type { ListingMediaRow, ListingRow } from '../types/database'
 import { createMedia, deleteMedia, reorderRows, updateListing, updateMedia, uploadImage } from './api'
+import { FloorPlansCard } from './FloorPlansCard'
 import type { EditorData } from './ListingEditor'
 import { ConfirmButton, EmptyState, errorMessage, useToast } from './ui'
 
@@ -226,6 +227,8 @@ export function MediaTab({ data, setMedia, onListing }: Props) {
           })}
         </ul>
       )}
+
+      <FloorPlansCard listingId={listing.id} />
     </div>
   )
 }

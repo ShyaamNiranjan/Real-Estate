@@ -12,6 +12,7 @@ import { asMobileMode, asObject, type ExperienceConfig, type FrameSequence, type
 import type { ListingMediaRow } from '../types/database'
 import { EnquiryForm } from './EnquiryForm'
 import { NotFound } from './NotFound'
+import { FloorPlans } from './FloorPlans'
 import { EditContext, Editable, Sections, type EditCommit } from './Sections'
 import { SiteFooter } from './SiteFooter'
 import { SiteHeader } from './SiteHeader'
@@ -247,6 +248,7 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
             onEnquire={enquire}
           />
         )}
+        <FloorPlans listing={listing} />
         <ListingEnquiry listing={listing} />
       </main>
       <SiteFooter />

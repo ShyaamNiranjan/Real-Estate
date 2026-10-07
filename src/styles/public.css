@@ -2898,3 +2898,240 @@ html.is-intro {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+
+/* Gallery strip: horizontal scroll with a thin accent progress bar */
+.gallery-strip {
+  position: relative;
+}
+
+.gallery-strip__track {
+  display: flex;
+  gap: clamp(0.5rem, 1.2vw, 1rem);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  cursor: grab;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gallery-strip__track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-strip__track.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.gallery-strip__item {
+  flex: 0 0 auto;
+  height: clamp(260px, 58vh, 620px);
+  padding: 0;
+  overflow: hidden;
+  background: var(--stone-deep);
+  scroll-snap-align: start;
+  cursor: zoom-in;
+}
+
+.gallery-strip__track.is-dragging .gallery-strip__item {
+  cursor: grabbing;
+}
+
+.gallery-strip__item img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  min-width: 200px;
+  object-fit: cover;
+  transition: transform 1.4s var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gallery-strip__item:hover img {
+    transform: scale(1.025);
+  }
+}
+
+.gallery-strip__bar {
+  position: relative;
+  height: 2px;
+  margin-top: clamp(1.2rem, 2.5vw, 1.8rem);
+  background: var(--sec-line);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.gallery-strip__bar::before {
+  content: '';
+  position: absolute;
+  inset: -10px 0;
+}
+
+.gallery-strip__bar span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--sec-accent, var(--gold));
+  border-radius: 2px;
+}
+
+@media (max-width: 640px) {
+  .gallery-strip__item {
+    height: 68vw;
+  }
+
+  .gallery-strip__item img {
+    max-width: 84vw;
+  }
+}
+
+/* Floor plans */
+.plans {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 2rem clamp(2rem, 6vw, 6rem);
+  align-items: start;
+}
+
+.plans__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.plans__tab {
+  min-height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--sec-line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sec-soft);
+  transition: border-color 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+}
+
+.plans__tab:hover {
+  border-color: var(--sec-accent);
+  color: var(--sec-fg);
+}
+
+.plans__tab.is-on {
+  border-color: var(--sec-accent);
+  background: var(--sec-accent);
+  color: var(--white);
+}
+
+.plans__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.3rem 1.5rem;
+  margin: clamp(2rem, 4vw, 3rem) 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--sec-line);
+}
+
+.plans__facts dt {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sec-accent);
+}
+
+.plans__facts dd {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1;
+}
+
+.plans__figure {
+  margin: 0;
+}
+
+.plans__zoom {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  background: #fff;
+  border: 1px solid var(--sec-line);
+  cursor: zoom-in;
+}
+
+.plans__zoom img {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+  animation: fadeIn 0.4s ease both;
+}
+
+.plans__figure figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+  font-size: 0.74rem;
+  color: var(--sec-soft);
+}
+
+.plans__figure figcaption span:first-child {
+  font-weight: 600;
+  color: var(--sec-fg);
+}
+
+.plans__dialog {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #fff;
+}
+
+.plans__dialog[open] {
+  animation: fadeIn 0.3s ease both;
+}
+
+.plans__dialog::backdrop {
+  background: rgba(10, 12, 11, 0.6);
+}
+
+.plans__dialog-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 4.5rem 1rem 2rem;
+}
+
+.plans__dialog-scroll img {
+  max-width: min(100%, 1800px);
+  height: auto;
+}
+
+.plans__dialog .lightbox__close {
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .plans {
+    grid-template-columns: 1fr;
+  }
+
+  .plans__dialog-scroll img {
+    max-width: none;
+    width: 180vw;
+  }
+}
