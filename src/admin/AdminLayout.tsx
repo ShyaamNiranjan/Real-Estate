@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { COUNTRIES, planName, resetProto, setProto, useProto, type Plan } from '../lib/prototype'
@@ -24,10 +24,27 @@ export function AdminLayout() {
   const free = proto.plan === 'free'
   const teamPlan = proto.plan === 'team' || proto.plan === 'brokerage'
 
+  const navRef = useRef<HTMLElement>(null)
+  const section = location.pathname.split('/')[2] ?? ''
+
   useEffect(() => {
     countNewEnquiries().then(setNewCount).catch(() => {})
     setNavOpen(false)
   }, [location.pathname])
+
+  useLayoutEffect(() => {
+    const nav = navRef.current
+    if (!nav) return
+    const place = () => {
+      const active = nav.querySelector<HTMLElement>('.a-side__link.active')
+      nav.style.setProperty('--ind-y', `${active?.offsetTop ?? 0}px`)
+      nav.style.setProperty('--ind-h', `${active?.offsetHeight ?? 0}px`)
+      nav.classList.toggle('has-active', Boolean(active))
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [section, free, teamPlan])
 
   return (
     <div className={`a-shell ${navOpen ? 'nav-open' : ''}`}>
@@ -54,7 +71,7 @@ export function AdminLayout() {
           <span className={`a-plan a-plan--${proto.plan}`}>{planName(proto.plan)}</span>
         </div>
 
-        <nav className="a-side__nav" aria-label="Studio">
+        <nav className="a-side__nav" aria-label="Studio" ref={navRef}>
           <NavLink to="/studio" end className="a-side__link">
             Overview
           </NavLink>
@@ -124,7 +141,9 @@ export function AdminLayout() {
       </aside>
 
       <main className="a-main">
-        <Outlet />
+        <div className="a-route" key={section}>
+          <Outlet />
+        </div>
       </main>
     </div>
   )

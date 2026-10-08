@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { ListingStatus } from '../types/database'
+import { PageSkeleton } from './visuals'
 
 // Toasts ---------------------------------------------------------------------
 
@@ -146,11 +147,7 @@ export function StatusMark({ status }: { status: ListingStatus }) {
 }
 
 export function Spinner({ label = 'Loading' }: { label?: string }) {
-  return (
-    <div className="a-spinner" role="status" aria-label={label}>
-      <span />
-    </div>
-  )
+  return <PageSkeleton label={label} />
 }
 
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {

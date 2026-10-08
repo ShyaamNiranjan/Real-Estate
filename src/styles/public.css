@@ -3501,3 +3501,39 @@ html.is-intro {
     -webkit-print-color-adjust: exact;
   }
 }
+
+.trend__plot svg {
+  animation: trendReveal 1.4s var(--ease-out) 0.15s both;
+}
+
+@keyframes trendReveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.trend__dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--trend-views);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--trend-views) 25%, transparent);
+  pointer-events: none;
+}
+
+.trend__tip {
+  border-radius: 6px;
+  transition: left 0.12s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trend__plot svg {
+    animation: none;
+  }
+}

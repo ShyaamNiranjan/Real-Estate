@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { countryInfo, resumeStep, setProto, skipStep, useProto, type StepKey } from '../lib/prototype'
-import { fetchSummary, fmtInt, fmtPct, type Summary } from '../lib/analyticsData'
+import { delta, fetchSummary, fmtInt, fmtPct, type Summary } from '../lib/analyticsData'
 import { useRealtor } from '../lib/realtor'
 import { useDocumentTitle, useSite } from '../lib/site'
 import type { ListingRow } from '../types/database'
 import { countNewEnquiries, listListings } from './api'
-import { useToast } from './ui'
+import { StatusMark, useToast } from './ui'
+import { CountUp, Delta, Icon, Ring, Skeleton, Sparkline } from './visuals'
 
 type Step = {
   key: StepKey
@@ -111,7 +112,6 @@ export function Overview() {
   )
   const doneCount = steps.filter((s) => proto.done.includes(s.key)).length
   const allDone = doneCount === steps.length
-  const published = listings?.filter((l) => l.status === 'published').length ?? 0
   const firstListing = listings?.[0]
   const url = `${window.location.host}${base}`
 
@@ -130,15 +130,25 @@ export function Overview() {
     toast('Your site is live')
   }
 
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const summaryLine = stats
+    ? `${fmtInt(stats.totals.visitors)} ${stats.totals.visitors === 1 ? 'person' : 'people'} visited your listings in the last 30 days${
+        newEnquiries ? `, and ${newEnquiries} new ${newEnquiries === 1 ? 'enquiry is' : 'enquiries are'} waiting for you.` : '.'
+      }`
+    : null
+
   return (
     <div className="a-page">
-      <header className="a-page__head">
+      <header className="a-page__head a-hello">
         <div>
-          <p className="a-eyebrow">{settings.brand_name}</p>
+          <p className="a-eyebrow">
+            {settings.brand_name} · {today}
+          </p>
           <h1 className="a-title">
             {greeting()}
             {name ? `, ${name}` : ''}.
           </h1>
+          {!free && (summaryLine ? <p className="a-hello__sub">{summaryLine}</p> : <Skeleton w={380} h={14} className="a-hello__skel" />)}
         </div>
       </header>
 
@@ -179,6 +189,8 @@ export function Overview() {
               )}
             </div>
           </section>
+
+          <Kpis stats={stats} listings={listings} newEnquiries={newEnquiries} />
 
           <div className="a-overview">
             <div className="a-overview__main">
@@ -263,23 +275,11 @@ export function Overview() {
             </div>
 
             <aside className="a-overview__side">
-              <Link to="/studio/listings" className="a-stat">
-                <span>Listings</span>
-                <strong>{listings === null ? '—' : listings.length}</strong>
-                <small>{published} published</small>
-              </Link>
-              <Link to="/studio/enquiries" className="a-stat">
-                <span>New enquiries</span>
-                <strong>{newEnquiries}</strong>
-                <small>Every lead goes straight to you</small>
-              </Link>
-              <Link to="/studio/analytics" className="a-stat">
-                <span>Visitors · 30 days</span>
-                <strong>{stats ? fmtInt(stats.totals.visitors) : '—'}</strong>
-                <small>{stats ? `${fmtInt(stats.totals.views)} views · ${fmtPct(stats.walkthrough.finishRate)} watched to the end` : 'Open analytics'}</small>
-              </Link>
+              <TopListings stats={stats} listings={listings} />
             </aside>
           </div>
+
+          <ListingCards listings={listings} stats={stats} listingPath={listingPath} />
         </>
       )}
 
@@ -295,6 +295,209 @@ export function Overview() {
         />
       )}
     </div>
+  )
+}
+
+function Kpis({ stats, listings, newEnquiries }: { stats: Summary | null; listings: ListingRow[] | null; newEnquiries: number }) {
+  const published = listings?.filter((l) => l.status === 'published').length ?? 0
+  const total = listings?.length ?? 0
+  return (
+    <div className="a-kpis">
+      <Link to="/studio/analytics" className="a-kpi">
+        <span className="a-kpi__head">
+          <span className="a-kpi__icon">
+            <Icon name="visitors" />
+          </span>
+          Visitors · 30 days
+        </span>
+        {stats ? (
+          <>
+            <strong>
+              <CountUp value={stats.totals.visitors} />
+            </strong>
+            <Delta value={delta(stats.totals.visitors, stats.previous.visitors)} />
+            <Sparkline values={stats.days.map((d) => d.visitors)} />
+          </>
+        ) : (
+          <KpiSkeleton />
+        )}
+      </Link>
+
+      <Link to="/studio/enquiries" className={`a-kpi ${newEnquiries ? 'is-hot' : ''}`}>
+        <span className="a-kpi__head">
+          <span className="a-kpi__icon">
+            <Icon name="enquiries" />
+          </span>
+          New enquiries
+        </span>
+        <strong>
+          <CountUp value={newEnquiries} />
+        </strong>
+        <span className="a-kpi__note">
+          {newEnquiries ? 'Waiting for your reply' : 'All caught up'}
+          {stats ? ` · ${fmtInt(stats.totals.enquiries)} in 30 days` : ''}
+        </span>
+        <span className="a-kpi__go">
+          Open enquiries <Icon name="arrow" size={14} />
+        </span>
+      </Link>
+
+      <Link to="/studio/listings" className="a-kpi">
+        <span className="a-kpi__head">
+          <span className="a-kpi__icon">
+            <Icon name="listings" />
+          </span>
+          Listings live
+        </span>
+        {listings ? (
+          <>
+            <strong>
+              <CountUp value={published} />
+              <small> of {total}</small>
+            </strong>
+            <span className="a-kpi__note">{total - published ? `${total - published} still in draft or preview` : 'Every listing is published'}</span>
+            <span className="a-kpi__bar" aria-hidden>
+              <span style={{ width: `${total ? (published / total) * 100 : 0}%` }} />
+            </span>
+          </>
+        ) : (
+          <KpiSkeleton />
+        )}
+      </Link>
+
+      <Link to="/studio/analytics" className="a-kpi a-kpi--ring">
+        <span className="a-kpi__head">
+          <span className="a-kpi__icon">
+            <Icon name="walk" />
+          </span>
+          Watched to the end
+        </span>
+        {stats ? (
+          <div className="a-kpi__ringrow">
+            <Ring value={stats.walkthrough.finishRate}>
+              <CountUp value={stats.walkthrough.finishRate * 100} format={(n) => `${Math.round(n)}%`} />
+            </Ring>
+            <span className="a-kpi__note">
+              of visitors who started a walkthrough saw every room. On average they saw {fmtPct(stats.walkthrough.avgDepth)}.
+            </span>
+          </div>
+        ) : (
+          <KpiSkeleton />
+        )}
+      </Link>
+    </div>
+  )
+}
+
+function KpiSkeleton() {
+  return (
+    <>
+      <Skeleton w="55%" h={30} />
+      <Skeleton w="75%" h={10} />
+      <Skeleton w="100%" h={28} />
+    </>
+  )
+}
+
+function TopListings({ stats, listings }: { stats: Summary | null; listings: ListingRow[] | null }) {
+  const byId = new Map((listings ?? []).map((l) => [l.id, l]))
+  const rows = (stats?.listings ?? []).filter((l) => byId.has(l.id)).slice(0, 4)
+  const max = Math.max(1, ...rows.map((r) => r.views))
+  return (
+    <section className="a-card a-top">
+      <div className="a-top__head">
+        <h2 className="a-card__title">Most viewed · 30 days</h2>
+        <Link to="/studio/analytics" className="a-link a-link--muted">
+          Analytics
+        </Link>
+      </div>
+      {!stats || !listings ? (
+        <div className="a-top__list">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="a-top__row">
+              <Skeleton w={44} h={44} />
+              <span className="a-top__text">
+                <Skeleton w="70%" h={12} />
+                <Skeleton w="40%" h={10} />
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : rows.length ? (
+        <ol className="a-top__list">
+          {rows.map((r, i) => {
+            const l = byId.get(r.id)!
+            return (
+              <li key={r.id} className="a-top__row" style={{ '--i': i } as CSSProperties}>
+                {l.cover_image_url ? <img src={l.cover_image_url} alt="" /> : <span className="a-top__ph" />}
+                <span className="a-top__text">
+                  <Link to={`/studio/analytics?listing=${r.id}`}>{l.title}</Link>
+                  <span className="a-top__meter" aria-hidden>
+                    <span style={{ width: `${(r.views / max) * 100}%` }} />
+                  </span>
+                </span>
+                <span className="a-top__num">
+                  <CountUp value={r.views} />
+                  <small>views</small>
+                </span>
+              </li>
+            )
+          })}
+        </ol>
+      ) : (
+        <p className="a-muted">Once people start visiting, your busiest listings show up here.</p>
+      )}
+    </section>
+  )
+}
+
+function ListingCards({ listings, stats, listingPath }: { listings: ListingRow[] | null; stats: Summary | null; listingPath: (slug: string) => string }) {
+  if (listings && !listings.length) return null
+  const views = new Map((stats?.listings ?? []).map((l) => [l.id, l.views]))
+  return (
+    <section className="a-lcards">
+      <div className="a-lcards__head">
+        <h2 className="a-card__title">Your listings</h2>
+        <Link to="/studio/listings" className="a-link a-link--muted">
+          See all
+        </Link>
+      </div>
+      <div className="a-lcards__grid">
+        {listings
+          ? listings.slice(0, 6).map((l) => (
+              <article key={l.id} className="a-lcard">
+                <Link to={`/studio/listings/${l.id}`} className="a-lcard__media">
+                  {l.cover_image_url ? <img src={l.cover_image_url} alt="" loading="lazy" /> : <span className="a-lcard__ph">{l.title.charAt(0)}</span>}
+                  <StatusMark status={l.status} />
+                </Link>
+                <div className="a-lcard__body">
+                  <Link to={`/studio/listings/${l.id}`} className="a-lcard__title">
+                    {l.title}
+                  </Link>
+                  <p className="a-lcard__meta">{l.location || listingPath(l.slug)}</p>
+                  <div className="a-lcard__foot">
+                    <span>
+                      <Icon name="views" size={15} />
+                      {stats ? `${fmtInt(views.get(l.id) ?? 0)} views` : '…'}
+                    </span>
+                    <a href={listingPath(l.slug)} target="_blank" rel="noreferrer" className="a-link a-link--muted">
+                      View ↗
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))
+          : [0, 1, 2].map((i) => (
+              <article key={i} className="a-lcard">
+                <Skeleton w="100%" h={150} className="a-lcard__media" />
+                <div className="a-lcard__body">
+                  <Skeleton w="60%" h={16} />
+                  <Skeleton w="40%" h={10} />
+                </div>
+              </article>
+            ))}
+      </div>
+    </section>
   )
 }
 

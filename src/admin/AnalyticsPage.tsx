@@ -24,6 +24,7 @@ import { asObject, type ExperienceConfig } from '../types/content'
 import type { ListingRow } from '../types/database'
 import { listListings } from './api'
 import { EmptyState, Spinner, errorMessage, useToast } from './ui'
+import { CountUp, Icon, Ring, Sparkline, type IconName } from './visuals'
 
 const RANGES = [
   { days: 7, label: '7 days' },
@@ -241,31 +242,52 @@ function Delta({ now, before }: { now: number; before: number }) {
 function Kpis({ data }: { data: Summary }) {
   const t = data.totals
   const p = data.previous
+  const head = (icon: IconName, label: string) => (
+    <span className="an-kpi__head">
+      <span className="a-kpi__icon">
+        <Icon name={icon} size={16} />
+      </span>
+      {label}
+    </span>
+  )
   return (
     <div className="an-kpis">
       <div className="an-kpi">
-        <span>Views</span>
-        <strong>{fmtInt(t.views)}</strong>
+        {head('views', 'Views')}
+        <strong>
+          <CountUp value={t.views} />
+        </strong>
         <Delta now={t.views} before={p.views} />
+        <Sparkline values={data.days.map((d) => d.views)} />
       </div>
       <div className="an-kpi">
-        <span>Unique visitors</span>
-        <strong>{fmtInt(t.visitors)}</strong>
+        {head('visitors', 'Unique visitors')}
+        <strong>
+          <CountUp value={t.visitors} />
+        </strong>
         <Delta now={t.visitors} before={p.visitors} />
+        <Sparkline values={data.days.map((d) => d.visitors)} />
       </div>
       <div className="an-kpi">
-        <span>Enquiries</span>
-        <strong>{fmtInt(t.enquiries)}</strong>
+        {head('enquiries', 'Enquiries')}
+        <strong>
+          <CountUp value={t.enquiries} />
+        </strong>
         <Delta now={t.enquiries} before={p.enquiries} />
+        <Sparkline values={data.days.map((d) => d.enquiries)} />
       </div>
       <div className="an-kpi">
-        <span>Enquiry rate</span>
-        <strong>{fmtPct(t.enquiryRate, 1)}</strong>
+        {head('rate', 'Enquiry rate')}
+        <strong>
+          <CountUp value={t.enquiryRate * 100} format={(n) => `${n.toFixed(1)}%`} />
+        </strong>
         <small className="an-delta">Enquiries per visitor</small>
       </div>
       <div className="an-kpi">
-        <span>Avg. time on page</span>
-        <strong>{fmtDuration(t.avgTimeMs)}</strong>
+        {head('clock', 'Avg. time on page')}
+        <strong>
+          <CountUp value={t.avgTimeMs} format={fmtDuration} />
+        </strong>
         <Delta now={t.avgTimeMs} before={p.avgTimeMs} />
       </div>
     </div>
@@ -304,18 +326,18 @@ function Walkthrough({ data, beats, listingSelected }: { data: Summary; beats: {
     <section className="a-card">
       <h2 className="a-card__title">Walkthrough</h2>
       <div className="an-walk">
-        <div>
-          <strong>{fmtPct(w.startRate)}</strong>
-          <span>started it</span>
-        </div>
-        <div>
-          <strong>{fmtPct(w.avgDepth)}</strong>
-          <span>average distance watched</span>
-        </div>
-        <div>
-          <strong>{fmtPct(w.finishRate)}</strong>
-          <span>watched to the end</span>
-        </div>
+        {[
+          { v: w.startRate, label: 'started it' },
+          { v: w.avgDepth, label: 'average distance watched' },
+          { v: w.finishRate, label: 'watched to the end' },
+        ].map((s) => (
+          <div key={s.label}>
+            <Ring value={s.v}>
+              <CountUp value={s.v * 100} format={(n) => `${Math.round(n)}%`} />
+            </Ring>
+            <span>{s.label}</span>
+          </div>
+        ))}
       </div>
       <p className="an-sub">{listingSelected && w.marks.length ? 'How far visitors got, room by room' : 'How far visitors got'}</p>
       <ol className="an-funnel">
@@ -343,13 +365,17 @@ function Engagement({ data }: { data: Summary }) {
         {(Object.keys(EVENT_LABEL) as (keyof typeof EVENT_LABEL)[]).map((k) => (
           <li key={k}>
             <span>{EVENT_LABEL[k]}</span>
-            <strong>{fmtInt(data.events[k]?.count ?? 0)}</strong>
+            <strong>
+              <CountUp value={data.events[k]?.count ?? 0} />
+            </strong>
             <em>{fmtPct((data.events[k]?.visits ?? 0) / views)} of visits</em>
           </li>
         ))}
         <li className="is-key">
           <span>Sent an enquiry</span>
-          <strong>{fmtInt(data.totals.enquiries)}</strong>
+          <strong>
+            <CountUp value={data.totals.enquiries} />
+          </strong>
           <em>{fmtPct((data.events.enquiry?.visits ?? 0) / views, 1)} of visits</em>
         </li>
       </ul>

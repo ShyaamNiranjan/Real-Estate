@@ -13,8 +13,9 @@ import { Overview } from './Overview'
 import { PaidOnly, PlanPage } from './PlanPage'
 import { Settings } from './Settings'
 import { TeamPage } from './TeamPage'
-import { Spinner, ToastProvider } from './ui'
+import { ToastProvider } from './ui'
 import './admin.css'
+import './motion.css'
 
 function RequireAdmin({ children }: { children: ReactNode }) {
   const { session, isAdmin, loading, signOut, profile } = useAuth()
@@ -22,8 +23,9 @@ function RequireAdmin({ children }: { children: ReactNode }) {
 
   if (loading)
     return (
-      <div className="a-boot">
-        <Spinner />
+      <div className="a-boot" role="status" aria-label="Loading Studio">
+        <span className="a-boot__mark">YE</span>
+        <span className="a-boot__bar" />
       </div>
     )
   if (!session) return <Navigate to="/studio/login" replace state={{ from: location.pathname }} />

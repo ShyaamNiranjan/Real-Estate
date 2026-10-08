@@ -36,7 +36,7 @@ export function TrendChart({ days, className = '' }: { days: Point[]; className?
         onPointerDown={(e) => onMove(e.clientX, e.currentTarget)}
         onPointerLeave={() => setHover(null)}
       >
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
+        <svg key={`${days[0]?.day}|${days.length}|${max}`} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
           {[0.25, 0.5, 0.75].map((f) => (
             <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} className="trend__grid" />
           ))}
@@ -47,6 +47,13 @@ export function TrendChart({ days, className = '' }: { days: Point[]; className?
             <line x1={(hover / (days.length - 1)) * W} x2={(hover / (days.length - 1)) * W} y1="0" y2={H} className="trend__cursor" vectorEffect="non-scaling-stroke" />
           )}
         </svg>
+        {point && days.length > 1 && (
+          <span
+            className="trend__dot"
+            style={{ left: `${(hover! / (days.length - 1)) * 100}%`, top: `${((H - (point.views / max) * (H - 12)) / H) * 100}%` }}
+            aria-hidden
+          />
+        )}
         {point && (
           <div className="trend__tip" style={{ left: `${days.length > 1 ? (hover! / (days.length - 1)) * 100 : 50}%` }}>
             <strong>{shortDate(point.day)}</strong>
