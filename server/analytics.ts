@@ -108,55 +108,19 @@ function visitorId(req: IncomingMessage, realtor: string, ts: number) {
   return createHash('sha256').update(`${dailySalt(dayOf(ts))}|${ip}|${ua}|${realtor}`).digest('hex').slice(0, 16)
 }
 
-const SOURCE_ALIASES: Record<string, string> = {
-  ig: 'instagram',
-  instagram: 'instagram',
-  fb: 'facebook',
-  facebook: 'facebook',
-  wa: 'whatsapp',
-  whatsapp: 'whatsapp',
-  linkedin: 'linkedin',
-  li: 'linkedin',
-  x: 'x',
-  twitter: 'x',
-  email: 'email',
-  newsletter: 'email',
-  mail: 'email',
-  qr: 'qr',
-  print: 'qr',
-  google: 'google',
-  bing: 'bing',
-  tiktok: 'tiktok',
-  youtube: 'youtube',
-}
+const SEARCH_ENGINES = /(^|\.)(google\.[a-z.]+|bing\.com|duckduckgo\.com|search\.yahoo\.com|yandex\.[a-z.]+|baidu\.com|ecosia\.org|search\.brave\.com)$/
 
-const REFERRER_SOURCES: [RegExp, string][] = [
-  [/(^|\.)instagram\.com$/, 'instagram'],
-  [/(^|\.)(facebook\.com|fb\.me|fb\.com)$/, 'facebook'],
-  [/(^|\.)(whatsapp\.com|wa\.me)$/, 'whatsapp'],
-  [/(^|\.)(t\.co|x\.com|twitter\.com)$/, 'x'],
-  [/(^|\.)(linkedin\.com|lnkd\.in)$/, 'linkedin'],
-  [/(^|\.)(tiktok\.com)$/, 'tiktok'],
-  [/(^|\.)(youtube\.com|youtu\.be)$/, 'youtube'],
-  [/(^|\.)(mail\.google\.com|outlook\.live\.com|outlook\.office\.com|mail\.yahoo\.com)$/, 'email'],
-  [/(^|\.)google\.[a-z.]+$/, 'google'],
-  [/(^|\.)bing\.com$/, 'bing'],
-  [/(^|\.)duckduckgo\.com$/, 'duckduckgo'],
-]
-
-function classify(tag: string | null, referrer: string | null, host: string): { src: string; ref: string | null } {
-  const t = tag?.toLowerCase().trim()
-  if (t) return { src: SOURCE_ALIASES[t] ?? (t.replace(/[^a-z0-9-]/g, '').slice(0, 24) || 'other'), ref: null }
-  if (!referrer) return { src: 'direct', ref: null }
+/** Two sources only: found through search, or arrived through a link (shared, messaged, typed or bookmarked). */
+function classify(referrer: string | null, host: string): { src: 'search' | 'link' | 'internal'; ref: string | null } {
+  if (!referrer) return { src: 'link', ref: null }
   let refHost = ''
   try {
     refHost = new URL(referrer).hostname.replace(/^www\./, '')
   } catch {
-    return { src: 'direct', ref: null }
+    return { src: 'link', ref: null }
   }
   if (!refHost || refHost === host.replace(/^www\./, '').split(':')[0]) return { src: 'internal', ref: null }
-  const hit = REFERRER_SOURCES.find(([re]) => re.test(refHost))
-  return hit ? { src: hit[1], ref: refHost } : { src: 'other', ref: refHost }
+  return { src: SEARCH_ENGINES.test(refHost) ? 'search' : 'link', ref: refHost }
 }
 
 const TZ_COUNTRY: Record<string, string> = {
@@ -193,7 +157,7 @@ function collect(req: IncomingMessage, body: Record<string, unknown>): Row | nul
     if (!realtor || visits.has(id)) return null
     const device: Device = body.d === 'phone' || body.d === 'tablet' ? body.d : 'desktop'
     const host = String(req.headers.host ?? '')
-    const { src, ref } = classify(clean(body.tag, 40), clean(body.ref, 500), host)
+    const { src, ref } = classify(clean(body.ref, 500), host)
     return {
       k: 'pv',
       id,
@@ -304,8 +268,7 @@ function summary(q: Query) {
     totals: totals(list),
     previous: totals(prev),
     days,
-    sources: countBy(entries, (v) => v.src),
-    referrers: countBy(entries, (v) => v.ref),
+    sources: countBy(entries, (v) => (v.src === 'search' || v.src === 'google' || v.src === 'bing' || v.src === 'duckduckgo' ? 'search' : 'link')),
     devices: countBy(list, (v) => v.d),
     countries: countBy(list, (v) => v.c),
     cities: countBy(list, (v) => (v.ci ? `${v.ci}${v.c ? `|${v.c}` : ''}` : null)),
@@ -347,8 +310,7 @@ const SAMPLE_CITIES: [[string, string], number][] = [
   [['Mumbai', 'IN'], 3], [['Paris', 'FR'], 2], [['Sydney', 'AU'], 2],
 ]
 const SAMPLE_SOURCES: [[string, string | null], number][] = [
-  [['instagram', 'l.instagram.com'], 32], [['whatsapp', null], 17], [['google', 'google.com'], 15], [['direct', null], 14],
-  [['facebook', 'm.facebook.com'], 8], [['qr', null], 5], [['email', null], 4], [['linkedin', 'linkedin.com'], 2], [['other', 'zillow.com'], 3],
+  [['link', null], 52], [['link', 'l.instagram.com'], 14], [['link', 'm.facebook.com'], 6], [['search', 'google.com'], 25], [['search', 'bing.com'], 3],
 ]
 
 function sample(realtor: string, listings: SampleListing[]) {

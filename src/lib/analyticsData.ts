@@ -10,7 +10,6 @@ export type Summary = {
   previous: Totals
   days: { day: string; views: number; visitors: number; enquiries: number }[]
   sources: Count[]
-  referrers: Count[]
   devices: Count[]
   countries: Count[]
   cities: Count[]
@@ -40,23 +39,11 @@ export async function fetchSummary(params: { realtor: string; days: number; list
 }
 
 export const SOURCE_LABEL: Record<string, string> = {
-  instagram: 'Instagram',
-  whatsapp: 'WhatsApp',
-  facebook: 'Facebook',
-  google: 'Google',
-  bing: 'Bing',
-  duckduckgo: 'DuckDuckGo',
-  direct: 'Direct & messaging apps',
-  qr: 'QR code / print',
-  email: 'Email',
-  linkedin: 'LinkedIn',
-  x: 'X',
-  tiktok: 'TikTok',
-  youtube: 'YouTube',
-  other: 'Other websites',
+  link: 'Through a link',
+  search: 'Found on Google',
 }
 
-export const sourceLabel = (key: string) => SOURCE_LABEL[key] ?? key.charAt(0).toUpperCase() + key.slice(1)
+export const sourceLabel = (key: string) => SOURCE_LABEL[key] ?? key
 
 export const EVENT_LABEL: Record<Exclude<EventKey, 'enquiry'>, string> = {
   gallery_open: 'Opened the gallery',
@@ -111,17 +98,4 @@ export function walkStages(w: Summary['walkthrough'], beats: { label?: string; t
 /** "September 9, 2026" from a summary day key, without shifting it through the local time zone. */
 export function fmtDay(day: string) {
   return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-}
-
-export const SHARE_CHANNELS = [
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'whatsapp', label: 'WhatsApp' },
-  { key: 'facebook', label: 'Facebook' },
-  { key: 'linkedin', label: 'LinkedIn' },
-  { key: 'email', label: 'Email' },
-  { key: 'qr', label: 'QR code / print' },
-] as const
-
-export function shareUrl(path: string, channel: string) {
-  return `${window.location.origin}${path}${channel ? `?src=${channel}` : ''}`
 }

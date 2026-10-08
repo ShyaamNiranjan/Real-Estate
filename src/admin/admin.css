@@ -3857,18 +3857,6 @@ a.a-stat:hover {
   align-items: center;
 }
 
-.an-share__on {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--a-soft);
-}
-
-.an-share__on select {
-  width: auto;
-}
-
 .an-share__url {
   max-width: 100%;
   padding: 0.45rem 0.65rem;
@@ -3879,9 +3867,4 @@ a.a-stat:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.an-share__hint {
-  margin: 0.7rem 0 0;
-  font-size: 0.78rem;
 }

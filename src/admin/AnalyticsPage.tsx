@@ -4,14 +4,12 @@ import { TrendChart } from '../components/TrendChart'
 import {
   DEVICE_LABEL,
   EVENT_LABEL,
-  SHARE_CHANNELS,
   countryName,
   delta,
   fetchSummary,
   fmtDuration,
   fmtInt,
   fmtPct,
-  shareUrl,
   walkStages,
   sourceLabel,
   type Count,
@@ -189,12 +187,9 @@ export function AnalyticsPage() {
                 <section className="a-card">
                   <h2 className="a-card__title">Where visitors came from</h2>
                   <BarList items={data.sources} label={sourceLabel} />
-                  {data.referrers.length > 0 && (
-                    <p className="an-foot">
-                      Top sites: {data.referrers.slice(0, 4).map((r) => `${r.name} (${r.count})`).join(', ')}
-                    </p>
-                  )}
-                  <p className="an-foot">WhatsApp and most messaging apps hide where a click came from. Share your tagged links to count them exactly.</p>
+                  <p className="an-foot">
+                    A link covers anything shared, messaged, posted or typed in. Google includes other search engines like Bing.
+                  </p>
                 </section>
                 <section className="a-card">
                   <h2 className="a-card__title">Devices</h2>
@@ -411,8 +406,7 @@ function ListingsTable({ data, titles, onPick }: { data: Summary; titles: Record
 
 function ListingActions({ listing, path }: { listing: ListingRow; path: string }) {
   const toast = useToast()
-  const [channel, setChannel] = useState('')
-  const url = shareUrl(path, channel)
+  const url = `${window.location.origin}${path}`
   const copy = async () => {
     await navigator.clipboard.writeText(url)
     toast('Link copied')
@@ -422,26 +416,11 @@ function ListingActions({ listing, path }: { listing: ListingRow; path: string }
       <div>
         <h2 className="a-card__title">{listing.title}</h2>
         <div className="an-share__links">
-          <label className="an-share__on">
-            <span>Sharing on</span>
-            <select className="a-input" value={channel} onChange={(e) => setChannel(e.target.value)}>
-              <option value="">Anywhere</option>
-              {SHARE_CHANNELS.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
           <code className="an-share__url">{url.replace(/^https?:\/\//, '')}</code>
           <button type="button" className="a-btn a-btn--ghost a-btn--sm" onClick={() => void copy()}>
             Copy link
           </button>
         </div>
-        <p className="a-muted an-share__hint">
-          Same page either way. Picking where you'll post it lets Analytics credit visits from apps like WhatsApp, which otherwise show up as
-          Direct.
-        </p>
       </div>
       <a className="a-btn a-btn--primary" href={`${path}/report`} target="_blank" rel="noreferrer">
         Seller report ↗

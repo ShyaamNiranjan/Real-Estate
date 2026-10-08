@@ -1,4 +1,4 @@
-import { fmtDuration, fmtInt, fmtPct, sourceLabel, type Summary } from './analyticsData'
+import { fmtDuration, fmtInt, fmtPct, type Summary } from './analyticsData'
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
@@ -12,7 +12,8 @@ export function weeklyEmailHtml(opts: {
 }) {
   const { summary: s, brand, firstName, titles, studioUrl } = opts
   const top = s.listings.slice(0, 3)
-  const source = s.sources[0]
+  const arrivals = s.sources.reduce((n, x) => n + x.count, 0)
+  const searchShare = arrivals ? (s.sources.find((x) => x.name === 'search')?.count ?? 0) / arrivals : null
   const change = s.previous.views ? Math.round(((s.totals.views - s.previous.views) / s.previous.views) * 100) : null
   const stat = (label: string, value: string) =>
     `<td style="padding:14px 10px;text-align:center;border:1px solid #e6e1d7;background:#fff"><div style="font:600 10px/1.4 Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#9a7b4f">${label}</div><div style="font:400 28px/1.2 Georgia,serif;color:#16181a;margin-top:6px">${value}</div></td>`
@@ -39,7 +40,7 @@ ${stat('Views', fmtInt(s.totals.views))}${stat('Enquiries', String(s.totals.enqu
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows || '<tr><td style="font:14px Arial,sans-serif;color:#8a8c8b;padding:10px 0">No listing views this week.</td></tr>'}</table>
 </td></tr>
 <tr><td style="background:#fff;padding:16px 28px 28px;border:1px solid #e6e1d7;border-top:0">
-<p style="font:14px/1.6 Arial,sans-serif;color:#52565a;margin:0 0 18px">${source ? `Most visitors came from <strong>${esc(sourceLabel(source.name))}</strong>. ` : ''}People spent ${fmtDuration(s.totals.avgTimeMs)} on a listing on average.</p>
+<p style="font:14px/1.6 Arial,sans-serif;color:#52565a;margin:0 0 18px">${searchShare !== null ? `<strong>${fmtPct(searchShare)}</strong> found you on Google; the rest came through a link. ` : ''}People spent ${fmtDuration(s.totals.avgTimeMs)} on a listing on average.</p>
 <a href="${esc(studioUrl)}" style="display:inline-block;background:#16181a;color:#fff;text-decoration:none;font:600 13px Arial,sans-serif;padding:12px 20px">Open full analytics</a>
 </td></tr>
 <tr><td style="padding:18px 4px;font:12px/1.6 Arial,sans-serif;color:#8a8c8b">Sent every Monday by YE for ${esc(brand)}. You can turn this off in Analytics.</td></tr>

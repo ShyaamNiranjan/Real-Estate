@@ -95,7 +95,6 @@ type PageviewInput = { realtor: string; listingId?: string | null; walk?: boolea
 
 function start({ realtor, listingId = null, walk = false }: PageviewInput) {
   listen()
-  const params = new URLSearchParams(window.location.search)
   const entry = !entryUsed
   entryUsed = true
   const id = crypto.randomUUID()
@@ -108,7 +107,6 @@ function start({ realtor, listingId = null, walk = false }: PageviewInput) {
     d: device(),
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
     ref: entry ? document.referrer : '',
-    tag: entry ? params.get('src') ?? params.get('utm_source') : null,
     entry,
     walk,
   })
