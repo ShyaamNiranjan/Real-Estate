@@ -61,6 +61,9 @@ export function AdminLayout() {
           <NavLink to="/studio/listings" className="a-side__link">
             Listings
           </NavLink>
+          <NavLink to="/studio/analytics" className="a-side__link">
+            Analytics
+          </NavLink>
           <NavLink to="/studio/home" className={`a-side__link ${free ? 'is-locked' : ''}`}>
             Website {free && LOCK}
           </NavLink>

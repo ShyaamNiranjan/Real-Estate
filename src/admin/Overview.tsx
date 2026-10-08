@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { countryInfo, resumeStep, setProto, skipStep, useProto, type StepKey } from '../lib/prototype'
+import { fetchSummary, fmtInt, fmtPct, type Summary } from '../lib/analyticsData'
 import { useRealtor } from '../lib/realtor'
 import { useDocumentTitle, useSite } from '../lib/site'
 import type { ListingRow } from '../types/database'
@@ -75,10 +76,11 @@ export function Overview() {
   const proto = useProto()
   const { settings } = useSite()
   const { profile } = useAuth()
-  const { base, listing: listingPath } = useRealtor()
+  const { base, slug, listing: listingPath } = useRealtor()
   const toast = useToast()
   const [listings, setListings] = useState<ListingRow[] | null>(null)
   const [newEnquiries, setNewEnquiries] = useState(0)
+  const [stats, setStats] = useState<Summary | null>(null)
   const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
@@ -89,6 +91,12 @@ export function Overview() {
       .then(setNewEnquiries)
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    fetchSummary({ realtor: slug, days: 30 })
+      .then(setStats)
+      .catch(() => {})
+  }, [slug])
 
   const free = proto.plan === 'free'
   const teamPlan = proto.plan === 'team' || proto.plan === 'brokerage'
@@ -265,11 +273,11 @@ export function Overview() {
                 <strong>{newEnquiries}</strong>
                 <small>Every lead goes straight to you</small>
               </Link>
-              <div className="a-stat a-stat--soon">
-                <span>Walkthrough views</span>
-                <strong>—</strong>
-                <small>Analytics · to be scoped</small>
-              </div>
+              <Link to="/studio/analytics" className="a-stat">
+                <span>Visitors · 30 days</span>
+                <strong>{stats ? fmtInt(stats.totals.visitors) : '—'}</strong>
+                <small>{stats ? `${fmtInt(stats.totals.views)} views · ${fmtPct(stats.walkthrough.finishRate)} watched to the end` : 'Open analytics'}</small>
+              </Link>
             </aside>
           </div>
         </>

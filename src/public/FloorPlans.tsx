@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { track } from '../lib/analytics'
 import { suggestedLabel, useFloorPlans } from '../lib/floorPlans'
 import type { ListingRow } from '../types/database'
 import { useReveal } from './useReveal'
@@ -8,6 +9,23 @@ export function FloorPlans({ listing }: { listing: ListingRow }) {
   const [active, setActive] = useState(0)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const ref = useReveal<HTMLDivElement>()
+  const sectionRef = useRef<HTMLElement>(null)
+  const hasPlans = plans.length > 0
+
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el || !hasPlans) return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        track('floorplan_view', { oncePerView: true })
+        io.disconnect()
+      },
+      { threshold: 0.4 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [hasPlans])
 
   if (!plans.length) return null
   const index = Math.min(active, plans.length - 1)
@@ -21,7 +39,7 @@ export function FloorPlans({ listing }: { listing: ListingRow }) {
   if (plans.length > 1) facts.push({ label: 'Levels', value: String(plans.length) })
 
   return (
-    <section className="sec sec--plans tone-light" aria-labelledby="plans-title">
+    <section className="sec sec--plans tone-light" aria-labelledby="plans-title" ref={sectionRef}>
       <div className="sec__inner reveal" ref={ref}>
         <div className="plans">
           <div className="plans__aside">

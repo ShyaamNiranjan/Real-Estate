@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchPublishedListings, homeCache, type ListingCard } from '../lib/api'
+import { usePageview } from '../lib/analytics'
+import { useRealtor } from '../lib/realtor'
 import { useDocumentTitle, useSite } from '../lib/site'
 import { SiteDraftBar } from './DraftBar'
 import { ListingTile } from './HomeSections'
@@ -10,6 +12,8 @@ type Beds = 0 | 2 | 3 | 4
 type Kind = 'all' | 'immersive' | 'photo'
 
 export function PropertiesPage() {
+  const { slug: realtorSlug } = useRealtor()
+  usePageview({ realtor: realtorSlug })
   useDocumentTitle('Properties')
   const { settings } = useSite()
   const [listings, setListings] = useState<ListingCard[] | null>(homeCache.listings)

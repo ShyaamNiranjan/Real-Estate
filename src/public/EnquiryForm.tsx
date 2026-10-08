@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { track } from '../lib/analytics'
 import { submitEnquiry } from '../lib/api'
 
 type Props = {
@@ -33,6 +34,7 @@ export function EnquiryForm({ listingId, listingTitle, tone = 'light' }: Props) 
         message: String(data.get('message') ?? ''),
       })
       form.reset()
+      track('enquiry')
       setStatus('sent')
     } catch (err) {
       console.error(err)

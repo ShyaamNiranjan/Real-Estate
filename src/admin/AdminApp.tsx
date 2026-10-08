@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { AdminLayout } from './AdminLayout'
+import { AnalyticsPage } from './AnalyticsPage'
 import { Dashboard } from './Dashboard'
 import { Enquiries } from './Enquiries'
 import { HomePage } from './HomePage'
@@ -71,6 +72,7 @@ export default function AdminApp() {
               }
             />
             <Route path="enquiries" element={<Enquiries />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
             <Route
               path="settings"
               element={

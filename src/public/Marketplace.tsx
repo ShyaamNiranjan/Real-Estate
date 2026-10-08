@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { fetchHomeSections, fetchPublishedListings, homeCache, type ListingCard } from '../lib/api'
+import { usePageview } from '../lib/analytics'
+import { useRealtor } from '../lib/realtor'
 import { brandParts, useDocumentTitle, useSite } from '../lib/site'
 import type { HomeSectionRow } from '../types/database'
 import { BrandIntro, introPending } from './BrandIntro'
@@ -11,6 +13,8 @@ import { SiteFooter } from './SiteFooter'
 import { SiteHeader } from './SiteHeader'
 
 export function Marketplace() {
+  const { slug: realtorSlug } = useRealtor()
+  usePageview({ realtor: realtorSlug })
   useDocumentTitle(null)
   const { settings } = useSite()
   const location = useLocation()

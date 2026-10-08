@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ScrollExperience } from '../components/ScrollExperience'
+import { reportDepth, track, usePageview } from '../lib/analytics'
 import { fetchListingBySlug } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { expandFramePattern, joinUrl, listingFacts } from '../lib/format'
@@ -159,7 +160,9 @@ function DraftStill({ listing, cover, firstFrame }: { listing: ListingWithRelati
 }
 
 function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: ListingDraft }) {
+  const { slug: realtor } = useRealtor()
   const enquire = useCallback(() => {
+    track('enquiry_click')
     document.getElementById('enquire')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
@@ -196,6 +199,7 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
   const cover = listing.cover_image_url ?? gallery[0]?.src ?? null
 
   const portraitDemo = new URLSearchParams(window.location.search).get('stage') === 'portrait'
+  usePageview(draft || listing.status !== 'published' ? null : { realtor, listingId: listing.id, walk: immersive })
 
   const firstFrame = useMemo(() => {
     const seq = sequences.landscape ?? sequences.portrait
@@ -222,6 +226,7 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
           }}
           beats={beats}
           mobileMode={asMobileMode(experience.mobile_mode)}
+          onProgress={reportDepth}
         />
       ) : (
         <PhotoHero listing={listing} cover={cover} />

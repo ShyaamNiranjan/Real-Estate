@@ -5,6 +5,7 @@ import { ListingPage } from './public/ListingPage'
 import { Marketplace } from './public/Marketplace'
 import { NotFound } from './public/NotFound'
 import { PropertiesPage } from './public/PropertiesPage'
+import { SellerReport } from './public/SellerReport'
 import { Landing } from './ye/Landing'
 import { Signup } from './ye/Signup'
 
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Marketplace /> },
           { path: 'properties', element: <PropertiesPage /> },
           { path: ':slug', element: <ListingPage /> },
+          { path: ':slug/report', element: <SellerReport /> },
         ],
       },
       { path: '*', element: <NotFound /> },

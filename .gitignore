@@ -8,5 +8,6 @@ tmp
 *.tsbuildinfo
 
 .vercel
+.data
 .env*
 !.env.example

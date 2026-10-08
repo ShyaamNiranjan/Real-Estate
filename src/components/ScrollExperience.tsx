@@ -32,6 +32,8 @@ type Props = {
   beats: ScrollBeat[]
   label: string
   mobileMode?: MobileMode
+  /** Called with walkthrough progress (0–1) as the visitor scrolls. */
+  onProgress?: (progress: number) => void
 }
 
 type View = { variant: Variant; portrait: boolean }
@@ -117,7 +119,9 @@ function drawContain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: nu
   ctx.drawImage(img, (w - dw) / 2, Math.round((h - dh) * FIT_BIAS), dw, dh)
 }
 
-export function ScrollExperience({ sequences, hero, beats, label, mobileMode = 'rotate' }: Props) {
+export function ScrollExperience({ sequences, hero, beats, label, mobileMode = 'rotate', onProgress }: Props) {
+  const onProgressRef = useRef(onProgress)
+  onProgressRef.current = onProgress
   const trackRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -386,6 +390,7 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
 
       const progress = Math.min(1, Math.max(0, window.scrollY / maxScroll))
       snap = progress < COMPLETE_AT ? progress : null
+      onProgressRef.current?.(progress)
 
       const done = progress >= COMPLETE_AT
       if (done !== complete) {

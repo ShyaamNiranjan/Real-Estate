@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { track } from '../lib/analytics'
 
 export type GalleryImage = { src: string; alt: string }
 
@@ -88,6 +89,7 @@ export function Gallery({ images }: { images: GalleryImage[] }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   const show = (i: number) => {
+    track('gallery_open')
     setOpen(i)
     dialogRef.current?.showModal()
   }
