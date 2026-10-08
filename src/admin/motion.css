@@ -955,3 +955,45 @@ a.a-kpi:hover .a-kpi__go svg {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Numbers: lining, even-width sans figures */
+.a-kpi strong,
+.an-kpi strong,
+.a-stat strong,
+.a-ring__label,
+.a-top__num,
+.an-walk strong {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'lnum' 1, 'tnum' 1;
+}
+
+.a-kpi strong,
+.an-kpi strong {
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.a-kpi strong small {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.a-ring__label {
+  font-size: 1rem;
+}
+
+.an-walk .a-ring__label {
+  font-size: 1.1rem;
+}
+
+.a-top__num {
+  font-size: 1rem;
+}
+
+.a-top__num small {
+  font-weight: 400;
+  letter-spacing: 0;
+}

@@ -3537,3 +3537,11 @@ html.is-intro {
     animation: none;
   }
 }
+
+.report__kpis strong {
+  font-family: var(--font-body);
+  font-size: clamp(1.7rem, 3.6vw, 2.3rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
