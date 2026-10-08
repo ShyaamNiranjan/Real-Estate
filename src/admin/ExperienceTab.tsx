@@ -192,7 +192,7 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
       <aside className="a-editor__side">
         <section className="a-card a-card--sticky">
           <h2 className="a-card__title">Opening frame</h2>
-          <p className="a-muted">Held on screen for the first few scrolls.</p>
+          <p className="a-muted">Shown over the first frame, before the visitor starts scrolling.</p>
           <div className="a-form">
             <Field label="Brand line">
               {(id) => <input id={id} className="a-input" value={hero.brand ?? ''} onChange={(e) => setHero({ ...hero, brand: e.target.value })} placeholder={listing.title} />}
@@ -208,7 +208,7 @@ export function ExperienceTab({ data, onListing, setMedia }: Props) {
                 <input id={id} className="a-input" value={hero.scrollHint ?? ''} onChange={(e) => setHero({ ...hero, scrollHint: e.target.value })} placeholder="Scroll to enter" />
               )}
             </Field>
-            <Field label="On phones" hint="Used when a phone is upright and there is no portrait sequence.">
+            <Field label="On phones" hint="Used on upright phones when there is no portrait version.">
               {(id) => (
                 <select id={id} className="a-input" value={mobileMode} onChange={(e) => setMobileMode(asMobileMode(e.target.value))}>
                   <option value="rotate">Rotate for landscape (recommended)</option>
@@ -286,35 +286,38 @@ function videoLabel(job: VideoJob) {
   return job.phase === 'extracting' ? `Extracting frames · ${pct}%` : `Uploading · ${pct}%`
 }
 
+const SLOTS: { aspect: MediaAspect; title: string; device: string; hint: string }[] = [
+  { aspect: 'landscape', title: 'Landscape version', device: 'tablets, laptops and desktops', hint: 'Filmed with the phone held sideways (16:9).' },
+  { aspect: 'portrait', title: 'Portrait version', device: 'phones', hint: 'Filmed with the phone upright (9:16).' },
+]
+
+function coverage(hasLandscape: boolean, hasPortrait: boolean) {
+  if (hasLandscape && hasPortrait) return 'Phones play the portrait version; tablets and larger screens play the landscape one.'
+  if (hasLandscape) return 'Phones play the landscape version turned sideways (change this under “On phones”). Add a portrait version for a full-screen phone walkthrough.'
+  if (hasPortrait) return 'Tablets and desktops show the portrait version as a tall panel beside the story. Add a landscape version for a full-screen desktop walkthrough.'
+  return 'No walkthrough yet, so the listing uses the photo layout.'
+}
+
 function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: Props['setMedia']; onListing: Props['onListing'] }) {
   const toast = useToast()
   const { listing, media } = data
-  const sequences = media.filter((m) => m.kind === 'frame_sequence')
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
-  const [uploadAspect, setUploadAspect] = useState<MediaAspect>('landscape')
-
-  const add = async () => {
-    try {
-      const row = await createMedia({
-        listing_id: listing.id,
-        kind: 'frame_sequence',
-        public_url: '/media/sequence',
-        frame_count: 240,
-        frame_pattern: 'frame-{###}.jpg',
-        aspect: sequences.some((s) => s.aspect === 'landscape') ? 'portrait' : 'landscape',
-        label: 'Frame sequence',
-        sort_order: sequences.length,
-      })
-      setMedia((m) => [...m, row])
-    } catch (err) {
-      toast(errorMessage(err), 'error')
-    }
-  }
-
-  const [videoJob, setVideoJob] = useState<VideoJob | null>(null)
-  const [videoWarnings, setVideoWarnings] = useState<string[]>([])
+  const sequences = media.filter((m) => m.kind === 'frame_sequence').sort((a, b) => a.sort_order - b.sort_order)
+  const [job, setJob] = useState<{ aspect: MediaAspect; video: VideoJob | null; frames: { done: number; total: number } | null } | null>(null)
+  const [warnings, setWarnings] = useState<{ aspect: MediaAspect; list: string[] } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const busy = Boolean(progress || videoJob)
+  const busy = Boolean(job)
+
+  useEffect(() => {
+    const block = (e: globalThis.DragEvent) => {
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) e.preventDefault()
+    }
+    window.addEventListener('dragover', block)
+    window.addEventListener('drop', block)
+    return () => {
+      window.removeEventListener('dragover', block)
+      window.removeEventListener('drop', block)
+    }
+  }, [])
 
   /** New sequences go first so they win over any older sequence with the same aspect on the public page. */
   const saveSequence = async (res: Awaited<ReturnType<typeof uploadFrameSequence>>, aspect: MediaAspect, label: string) => {
@@ -333,194 +336,269 @@ function Sequences({ data, setMedia, onListing }: { data: EditorData; setMedia: 
     if (listing.experience_type !== 'immersive') onListing(await updateListing(listing.id, { experience_type: 'immersive' }))
   }
 
-  const uploadFrames = async (files: File[]) => {
-    if (!files.length) return
-    setProgress({ done: 0, total: files.length })
-    try {
-      const res = await uploadFrameSequence(listing.id, files, (done, total) => setProgress({ done, total }))
-      await saveSequence(res, uploadAspect, `Uploaded ${uploadAspect} sequence`)
-      toast(`${res.count} frames uploaded`)
-    } catch (err) {
-      toast(errorMessage(err), 'error')
-    } finally {
-      setProgress(null)
-    }
-  }
-
-  /** Either zone accepts either kind of file, so a drop on the "wrong" zone still does the right thing. */
-  const onDropped = (files: File[]) => {
-    if (busy || !files.length) return
-    const video = files.find((f) => f.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(f.name))
-    if (video) return void uploadVideo(video)
-    const images = files.filter((f) => f.type.startsWith('image/'))
-    if (images.length) return void uploadFrames(images)
-    toast('Drop a video or image frames', 'error')
-  }
-  const videoDrop = useFileDrop(onDropped, !busy)
-  const framesDrop = useFileDrop(onDropped, !busy)
-
-  useEffect(() => {
-    const block = (e: globalThis.DragEvent) => {
-      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) e.preventDefault()
-    }
-    window.addEventListener('dragover', block)
-    window.addEventListener('drop', block)
-    return () => {
-      window.removeEventListener('dragover', block)
-      window.removeEventListener('drop', block)
-    }
-  }, [])
-
-  const uploadVideo = async (file: File) => {
+  const uploadVideo = async (file: File, slot: MediaAspect) => {
     const controller = new AbortController()
     abortRef.current = controller
-    setVideoJob({ phase: 'reading', done: 0, total: 0 })
-    setVideoWarnings([])
+    setJob({ aspect: slot, video: { phase: 'reading', done: 0, total: 0 }, frames: null })
+    setWarnings(null)
     try {
       const info = await probeVideo(file)
-      setVideoWarnings(footageWarnings(info))
-      const aspect: MediaAspect = info.aspect === 'square' ? 'landscape' : info.aspect
-      const preset = VIDEO_PRESETS[aspect]
+      if (info.aspect !== 'square' && info.aspect !== slot) {
+        const other = SLOTS.find((s) => s.aspect === info.aspect)!
+        toast(`This video was filmed ${info.aspect === 'portrait' ? 'upright' : 'sideways'}. Upload it under “${other.title}”.`, 'error')
+        return
+      }
+      setWarnings({ aspect: slot, list: footageWarnings(info) })
+      const preset = VIDEO_PRESETS[slot]
       const frames = await extractFrames(
         file,
         { count: preset.frames, maxWidth: preset.width, quality: preset.quality },
-        (done, total) => setVideoJob({ phase: 'extracting', done, total }),
+        (done, total) => setJob({ aspect: slot, video: { phase: 'extracting', done, total }, frames: null }),
         controller.signal,
       )
       if (controller.signal.aborted) throw new DOMException('Cancelled', 'AbortError')
-      setVideoJob({ phase: 'uploading', done: 0, total: frames.length })
-      const res = await uploadFrameSequence(listing.id, frames, (done, total) => setVideoJob({ phase: 'uploading', done, total }))
-      await saveSequence(res, aspect, `${file.name} · ${aspect}`)
-      toast(`Walkthrough ready — ${res.count} ${aspect} frames`)
+      const res = await uploadFrameSequence(listing.id, frames, (done, total) =>
+        setJob({ aspect: slot, video: { phase: 'uploading', done, total }, frames: null }),
+      )
+      await saveSequence(res, slot, `${file.name} · ${slot}`)
+      toast(`${slot === 'landscape' ? 'Landscape' : 'Portrait'} walkthrough ready — ${res.count} frames`)
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') toast('Video upload cancelled')
       else toast(errorMessage(err), 'error')
     } finally {
       abortRef.current = null
-      setVideoJob(null)
+      setJob(null)
     }
   }
+
+  const uploadFrames = async (files: File[], slot: MediaAspect) => {
+    if (!files.length) return
+    setJob({ aspect: slot, video: null, frames: { done: 0, total: files.length } })
+    try {
+      const res = await uploadFrameSequence(listing.id, files, (done, total) => setJob({ aspect: slot, video: null, frames: { done, total } }))
+      await saveSequence(res, slot, `Uploaded ${slot} frames`)
+      toast(`${res.count} frames uploaded`)
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    } finally {
+      setJob(null)
+    }
+  }
+
+  const addByPath = async (slot: MediaAspect) => {
+    try {
+      const row = await createMedia({
+        listing_id: listing.id,
+        kind: 'frame_sequence',
+        public_url: slot === 'portrait' ? '/media/sequence-portrait' : '/media/sequence',
+        frame_count: 240,
+        frame_pattern: 'frame-{###}.jpg',
+        aspect: slot,
+        label: `${slot} sequence`,
+        sort_order: Math.min(0, ...sequences.map((s) => s.sort_order)) - 1,
+      })
+      setMedia((m) => [row, ...m])
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    }
+  }
+
+  const ofAspect = (aspect: MediaAspect) => sequences.filter((s) => (s.aspect ?? 'landscape') === aspect)
+  const hasLandscape = ofAspect('landscape').length > 0
+  const hasPortrait = ofAspect('portrait').length > 0
 
   return (
     <section className="a-card">
       <div className="a-card__head">
         <div>
-          <h2 className="a-card__title">Frame sequences</h2>
-          <p className="a-muted">
-            One landscape sequence for desktop and an optional portrait one for phones. Frames are drawn to a canvas as the visitor scrolls.
-          </p>
+          <h2 className="a-card__title">Walkthrough video</h2>
+          <p className="a-muted">Add one or both versions. Each screen automatically plays the version that fits it best.</p>
         </div>
-        <button type="button" className="a-btn a-btn--ghost" onClick={() => void add()}>
-          Add by path
-        </button>
       </div>
 
-      {sequences.length === 0 && <p className="a-note a-note--warn">No sequences yet — the listing falls back to the photo layout.</p>}
+      <p className={`a-note${hasLandscape || hasPortrait ? '' : ' a-note--warn'}`}>{coverage(hasLandscape, hasPortrait)}</p>
 
-      <div className="a-seqs">
-        {sequences.map((s) => (
-          <SequenceRow key={s.id} row={s} setMedia={setMedia} />
+      <div className="a-slots">
+        {SLOTS.map((slot) => (
+          <SequenceSlot
+            key={slot.aspect}
+            slot={slot}
+            rows={ofAspect(slot.aspect)}
+            job={job?.aspect === slot.aspect ? job : null}
+            busy={busy}
+            warnings={warnings?.aspect === slot.aspect ? warnings.list : []}
+            onVideo={(f) => void uploadVideo(f, slot.aspect)}
+            onFrames={(f) => void uploadFrames(f, slot.aspect)}
+            onAddByPath={() => void addByPath(slot.aspect)}
+            onCancel={() => abortRef.current?.abort()}
+            setMedia={setMedia}
+          />
         ))}
       </div>
 
-      <div className={`a-upload-frames a-dropzone${videoDrop.isOver ? ' is-over' : ''}`} {...videoDrop.props}>
+      <ul className="a-filming">
+        <li>Use a gimbal, or your phone's stabilised / action mode.</li>
+        <li>Walk slowly at one steady pace. No stopping, no zooming.</li>
+        <li>Film in 4K at 60fps, with every light on and exposure locked.</li>
+        <li>One continuous take, 10–40 seconds, entrance to the best room.</li>
+      </ul>
+
+      <details className="a-details">
+        <summary>Exporting frames yourself</summary>
+        <p className="a-muted">For full control over quality, export frames with FFmpeg and upload them in the matching slot:</p>
+        <pre className="a-code">
+          {`# landscape, 240 frames, 1920px wide
+ffmpeg -i walkthrough.mp4 -vf "fps=240/DURATION,scale=1920:-2" -q:v 3 frame-%03d.jpg
+
+# portrait (phones), 240 frames, 720px wide
+ffmpeg -i walkthrough-portrait.mp4 -vf "fps=240/DURATION,scale=720:-2" -q:v 4 frame-%03d.jpg`}
+        </pre>
+        <p className="a-muted">Replace DURATION with the clip length in seconds.</p>
+      </details>
+    </section>
+  )
+}
+
+type SlotJob = { video: VideoJob | null; frames: { done: number; total: number } | null }
+
+function SequenceSlot({
+  slot,
+  rows,
+  job,
+  busy,
+  warnings,
+  onVideo,
+  onFrames,
+  onAddByPath,
+  onCancel,
+  setMedia,
+}: {
+  slot: (typeof SLOTS)[number]
+  rows: ListingMediaRow[]
+  job: SlotJob | null
+  busy: boolean
+  warnings: string[]
+  onVideo: (file: File) => void
+  onFrames: (files: File[]) => void
+  onAddByPath: () => void
+  onCancel: () => void
+  setMedia: Props['setMedia']
+}) {
+  const toast = useToast()
+  const active = rows[0]
+  const older = rows.slice(1)
+  const onDropped = (files: File[]) => {
+    if (busy || !files.length) return
+    const video = files.find((f) => f.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(f.name))
+    if (video) return onVideo(video)
+    const images = files.filter((f) => f.type.startsWith('image/'))
+    if (images.length) return onFrames(images)
+    toast('Drop a video or image frames', 'error')
+  }
+  const drop = useFileDrop(onDropped, !busy)
+  const first = active?.public_url && active.frame_pattern ? joinUrl(active.public_url, expandFramePattern(active.frame_pattern, 1)) : ''
+  const progress = job?.video ? job.video : job?.frames ? { ...job.frames, phase: 'uploading' as const } : null
+
+  const removeOlder = async () => {
+    try {
+      for (const row of older) await deleteMedia(row)
+      setMedia((m) => m.filter((x) => !older.some((o) => o.id === x.id)))
+      toast('Older uploads removed')
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    }
+  }
+
+  return (
+    <div className={`a-slot a-slot--${slot.aspect} a-dropzone${drop.isOver ? ' is-over' : ''}${active ? ' has-video' : ''}`} {...drop.props}>
+      <div className="a-slot__head">
         <div>
-          <h3 className="a-card__subtitle">Upload a video</h3>
-          <p className="a-muted">
-            Drop an MP4 or WebM here, or choose one. The walkthrough frames are extracted in your browser, then uploaded — keep this tab open until it
-            finishes. Wide videos become the desktop sequence, tall phone videos the mobile one; either works on both if it is the only one.
-          </p>
-          <ul className="a-filming">
-            <li>Use a gimbal, or your phone's stabilised / action mode.</li>
-            <li>Walk slowly at one steady pace. No stopping, no zooming.</li>
-            <li>Film in 4K at 60fps, with every light on and exposure locked.</li>
-            <li>One continuous take, 10–40 seconds, entrance to the best room.</li>
-          </ul>
-          {videoWarnings.length > 0 && (
-            <div className="a-note a-note--warn">
-              <strong>Before you publish:</strong>
-              <ul>
-                {videoWarnings.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <h3 className="a-card__subtitle">{slot.title}</h3>
+          <p className="a-slot__device">Plays on {slot.device}</p>
         </div>
-        <div className="a-inline-form">
-          <label className={`a-btn a-btn--primary a-file${busy ? ' is-disabled' : ''}`}>
-            {videoJob ? videoLabel(videoJob) : 'Choose video'}
-            <input
-              type="file"
-              accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
-              disabled={busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                e.target.value = ''
-                if (file) void uploadVideo(file)
-              }}
-            />
-          </label>
-          {videoJob && (
-            <button type="button" className="a-link" onClick={() => abortRef.current?.abort()}>
-              Cancel
-            </button>
-          )}
-        </div>
-        {videoJob && videoJob.total > 0 && (
-          <div className="a-progress" aria-hidden>
-            <span style={{ transform: `scaleX(${videoJob.done / videoJob.total})` }} />
-          </div>
-        )}
+        <span className={`a-slot__status${active ? ' is-on' : ''}`}>{active ? 'Added' : 'Optional'}</span>
       </div>
 
-      <div className={`a-upload-frames a-dropzone${framesDrop.isOver ? ' is-over' : ''}`} {...framesDrop.props}>
-        <div>
-          <h3 className="a-card__subtitle">Upload frames</h3>
-          <p className="a-muted">
-            Drop or select a set of numbered JPGs (max 5 MB each). They are renamed <code>frame-001.jpg…</code> in the{' '}
-            <code>listing-frames</code> bucket.
-          </p>
+      <div className="a-slot__preview">
+        {first ? <img src={first} alt={`${slot.title} first frame`} loading="lazy" /> : <span className="a-slot__frame" aria-hidden />}
+      </div>
+
+      {active ? (
+        <p className="a-muted a-slot__meta">
+          {active.frame_count} frames · {active.label ?? 'Walkthrough'}
+        </p>
+      ) : (
+        <p className="a-muted a-slot__meta">{slot.hint} Drop the video here or choose it below.</p>
+      )}
+
+      {warnings.length > 0 && (
+        <div className="a-note a-note--warn">
+          <strong>Before you publish:</strong>
+          <ul>
+            {warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
         </div>
+      )}
+
+      <div className="a-inline-form">
+        <label className={`a-btn ${active ? 'a-btn--ghost' : 'a-btn--primary'} a-file${busy ? ' is-disabled' : ''}`}>
+          {job?.video ? videoLabel(job.video) : job?.frames ? `Uploading ${job.frames.done}/${job.frames.total}` : active ? 'Replace video' : 'Choose video'}
+          <input
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (file) onVideo(file)
+            }}
+          />
+        </label>
+        {job?.video && (
+          <button type="button" className="a-link" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
+      {progress && progress.total > 0 && (
+        <div className="a-progress" aria-hidden>
+          <span style={{ transform: `scaleX(${progress.done / progress.total})` }} />
+        </div>
+      )}
+
+      <details className="a-details">
+        <summary>Advanced</summary>
         <div className="a-inline-form">
-          <select className="a-input" value={uploadAspect} onChange={(e) => setUploadAspect(e.target.value as MediaAspect)} aria-label="Aspect">
-            <option value="landscape">Landscape</option>
-            <option value="portrait">Portrait</option>
-          </select>
-          <label className="a-btn a-btn--ghost a-file">
-            {progress ? `Uploading ${progress.done}/${progress.total}` : 'Choose frames'}
+          <label className={`a-btn a-btn--ghost a-btn--sm a-file${busy ? ' is-disabled' : ''}`}>
+            Upload numbered frames
             <input
               type="file"
               multiple
               accept="image/jpeg,image/png,image/webp"
               disabled={busy}
               onChange={(e) => {
-                void uploadFrames(Array.from(e.target.files ?? []))
+                onFrames(Array.from(e.target.files ?? []))
                 e.target.value = ''
               }}
             />
           </label>
+          <button type="button" className="a-link" onClick={onAddByPath}>
+            Add by path
+          </button>
         </div>
-        {progress && (
-          <div className="a-progress" aria-hidden>
-            <span style={{ transform: `scaleX(${progress.done / progress.total})` }} />
-          </div>
+        {active && <SequenceRow key={active.id} row={active} setMedia={setMedia} />}
+        {older.length > 0 && (
+          <p className="a-muted">
+            {older.length} older upload{older.length === 1 ? '' : 's'} not in use.{' '}
+            <ConfirmButton onConfirm={() => void removeOlder()} className="a-link a-link--danger" confirmLabel="Delete them?">
+              Remove
+            </ConfirmButton>
+          </p>
         )}
-      </div>
-
-      <details className="a-details">
-        <summary>Exporting frames yourself</summary>
-        <p className="a-muted">For full control over quality, export frames with FFmpeg and upload them above:</p>
-        <pre className="a-code">
-          {`# landscape, 240 frames, 1920px wide
-ffmpeg -i walkthrough.mp4 -vf "fps=240/DURATION,scale=1920:-2" -q:v 3 frame-%03d.jpg
-
-# portrait (phones), 120 frames, 900px wide
-ffmpeg -i walkthrough-portrait.mp4 -vf "fps=120/DURATION,scale=900:-2" -q:v 4 frame-%03d.jpg`}
-        </pre>
-        <p className="a-muted">Replace DURATION with the clip length in seconds.</p>
       </details>
-    </section>
+    </div>
   )
 }
 

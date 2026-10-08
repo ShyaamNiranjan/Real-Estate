@@ -36,15 +36,24 @@ type Props = {
 
 type View = { variant: Variant; portrait: boolean }
 
+/** Below this short side the screen is a phone; tablets and up count as large screens. */
+const PHONE_MAX = 600
+
+/** Upright phones get the portrait version; tablets, desktops and sideways phones get landscape. */
 function getView(): View {
   const w = window.innerWidth
   const h = window.innerHeight
-  return { variant: w > h || w > 900 ? 'landscape' : 'portrait', portrait: h > w }
+  const phone = Math.min(w, h) < PHONE_MAX
+  return { variant: phone && h > w ? 'portrait' : 'landscape', portrait: h > w }
 }
 
 function resolveLayout(view: View, hasPortrait: boolean, hasLandscape: boolean, mode: MobileMode): Layout {
-  if (!view.portrait && !hasLandscape && hasPortrait) return 'side'
-  if (!view.portrait || hasPortrait || mode === 'fill') return 'cover'
+  if (view.variant === 'landscape') {
+    if (!hasLandscape) return view.portrait ? 'cover' : 'side'
+    // An upright tablet shows the landscape version as a full-width band rather than cropping it.
+    return view.portrait ? 'fit' : 'cover'
+  }
+  if (hasPortrait || mode === 'fill') return 'cover'
   if (mode === 'fit') return 'fit'
   // A portrait desktop window cannot be tilted, so only touch devices rotate.
   return window.matchMedia('(pointer: coarse)').matches ? 'rotate' : 'cover'

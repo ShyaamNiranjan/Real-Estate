@@ -3339,3 +3339,124 @@ a.a-stat:hover {
   max-height: 100%;
   object-fit: contain;
 }
+
+/* Walkthrough slots: one landscape, one portrait */
+.a-slots {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin: 1rem 0 1.2rem;
+}
+
+.a-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px dashed var(--a-line-strong);
+  border-radius: var(--a-radius);
+  background: var(--a-sunk);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.a-slot.has-video {
+  border-style: solid;
+  border-color: var(--a-line);
+  background: var(--a-surface);
+}
+
+.a-slot.is-over {
+  border-color: var(--a-gold);
+  background: color-mix(in srgb, var(--a-gold) 8%, var(--a-surface));
+}
+
+.a-slot__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.a-slot__head .a-card__subtitle {
+  margin: 0;
+}
+
+.a-slot__device {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--a-mute);
+}
+
+.a-slot__status {
+  flex-shrink: 0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--a-mute);
+  background: var(--a-bg);
+}
+
+.a-slot__status.is-on {
+  color: #fff;
+  background: var(--a-green);
+}
+
+.a-slot__preview {
+  display: grid;
+  place-items: center;
+  height: 220px;
+  border-radius: var(--a-radius);
+  background: #111413;
+  overflow: hidden;
+}
+
+.a-slot__preview img,
+.a-slot__frame {
+  height: 100%;
+  object-fit: cover;
+}
+
+.a-slot--landscape .a-slot__preview img,
+.a-slot--landscape .a-slot__frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.a-slot--portrait .a-slot__preview img,
+.a-slot--portrait .a-slot__frame {
+  aspect-ratio: 9 / 16;
+}
+
+.a-slot__frame {
+  display: block;
+  max-height: 160px;
+  border: 1.5px dashed rgba(250, 248, 244, 0.25);
+  border-radius: 6px;
+}
+
+.a-slot--landscape .a-slot__frame {
+  width: auto;
+  height: 110px;
+}
+
+.a-slot--portrait .a-slot__frame {
+  height: 150px;
+}
+
+.a-slot__meta {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.a-slot .a-details {
+  margin-top: auto;
+}
+
+@media (max-width: 1100px) {
+  .a-slots {
+    grid-template-columns: 1fr;
+  }
+}
