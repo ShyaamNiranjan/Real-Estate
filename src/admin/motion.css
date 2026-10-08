@@ -997,3 +997,39 @@ a.a-kpi:hover .a-kpi__go svg {
   font-weight: 400;
   letter-spacing: 0;
 }
+
+/* Scrollwalk wordmark: lowercase, tight, with the gold dot */
+.a-side__brand span,
+.a-boot__mark,
+.a-auth__art-brand {
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.a-side__brand span::after,
+.a-boot__mark::after,
+.a-auth__art-brand::after {
+  content: '';
+  display: inline-block;
+  width: 0.22em;
+  height: 0.22em;
+  margin-left: 0.08em;
+  border-radius: 50%;
+  background: var(--a-gold);
+  vertical-align: 0.62em;
+}
+
+.a-side__brand span {
+  font-size: 1.3rem;
+}
+
+.a-boot__mark {
+  margin-right: 0;
+  font-size: 2.2rem;
+}
+
+.a-auth__art-brand {
+  font-size: clamp(2.8rem, 7vw, 6rem);
+  line-height: 1;
+}

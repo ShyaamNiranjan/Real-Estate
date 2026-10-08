@@ -125,7 +125,7 @@ export function SiteFooter({ presets }: { presets?: HomeSectionPreset[] }) {
             {settings.demo_note && <span className="site-footer__demo">{settings.demo_note}</span>}
             {proto.plan === 'free' && (
               <Link to="/" className="site-footer__made">
-                Made with YE
+                Made with Scrollwalk
               </Link>
             )}
           </p>

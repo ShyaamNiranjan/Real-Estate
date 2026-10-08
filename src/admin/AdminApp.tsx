@@ -24,7 +24,7 @@ function RequireAdmin({ children }: { children: ReactNode }) {
   if (loading)
     return (
       <div className="a-boot" role="status" aria-label="Loading Studio">
-        <span className="a-boot__mark">YE</span>
+        <span className="a-boot__mark">scrollwalk</span>
         <span className="a-boot__bar" />
       </div>
     )

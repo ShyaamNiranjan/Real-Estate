@@ -50,8 +50,8 @@ export function AdminLayout() {
     <div className={`a-shell ${navOpen ? 'nav-open' : ''}`}>
       <aside className="a-side">
         <div className="a-side__top">
-          <NavLink to="/studio" end className="a-side__brand" aria-label="YE Studio">
-            <span>YE</span>
+          <NavLink to="/studio" end className="a-side__brand" aria-label="Scrollwalk Studio">
+            <span>scrollwalk</span>
             <small>Studio</small>
           </NavLink>
           <button

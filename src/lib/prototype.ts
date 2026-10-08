@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 
 /**
- * Internal prototype state. YE's real accounts, plans and billing do not exist yet, so the
+ * Internal prototype state. Scrollwalk's real accounts, plans and billing do not exist yet, so the
  * signup flow, plan, country and setup progress are simulated in this browser only.
  */
 

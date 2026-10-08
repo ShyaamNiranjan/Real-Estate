@@ -26,7 +26,7 @@ export function weeklyEmailHtml(opts: {
   return `<!doctype html><html><body style="margin:0;background:#f3f1ec">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f1ec;padding:32px 12px"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%">
-<tr><td style="padding:0 0 18px;font:600 12px Arial,sans-serif;letter-spacing:.3em;color:#16181a">YE</td></tr>
+<tr><td style="padding:0 0 18px;font:600 12px Arial,sans-serif;letter-spacing:-.02em;color:#16181a">scrollwalk<span style="color:#c4a574">.</span></td></tr>
 <tr><td style="background:#fff;padding:28px 28px 8px;border:1px solid #e6e1d7;border-bottom:0">
 <div style="font:400 26px/1.25 Georgia,serif;color:#16181a">Your week, ${esc(firstName || brand)}</div>
 <p style="font:15px/1.6 Arial,sans-serif;color:#52565a;margin:10px 0 0">${fmtInt(s.totals.visitors)} people visited your listings in the last 7 days${change === null ? '' : `, ${change >= 0 ? 'up' : 'down'} ${Math.abs(change)}% on the week before`}.</p>
@@ -43,6 +43,6 @@ ${stat('Views', fmtInt(s.totals.views))}${stat('Enquiries', String(s.totals.enqu
 <p style="font:14px/1.6 Arial,sans-serif;color:#52565a;margin:0 0 18px">${searchShare !== null ? `<strong>${fmtPct(searchShare)}</strong> found you on Google; the rest came through a link. ` : ''}People spent ${fmtDuration(s.totals.avgTimeMs)} on a listing on average.</p>
 <a href="${esc(studioUrl)}" style="display:inline-block;background:#16181a;color:#fff;text-decoration:none;font:600 13px Arial,sans-serif;padding:12px 20px">Open full analytics</a>
 </td></tr>
-<tr><td style="padding:18px 4px;font:12px/1.6 Arial,sans-serif;color:#8a8c8b">Sent every Monday by YE for ${esc(brand)}. You can turn this off in Analytics.</td></tr>
+<tr><td style="padding:18px 4px;font:12px/1.6 Arial,sans-serif;color:#8a8c8b">Sent every Monday by Scrollwalk for ${esc(brand)}. You can turn this off in Analytics.</td></tr>
 </table></td></tr></table></body></html>`
 }

@@ -507,7 +507,7 @@ function FreeOverview({ hasListing, previewHref }: { hasListing: boolean; previe
       <section className="a-sitecard a-sitecard--free">
         <div className="a-sitecard__main">
           <span className="a-sitecard__status">Free preview</span>
-          <h2 className="a-sitecard__title">See YE work on one of your own homes.</h2>
+          <h2 className="a-sitecard__title">See Scrollwalk work on one of your own homes.</h2>
           <p className="a-muted">
             Build one listing with a walkthrough. Only you can see it. When you are happy, subscribe to publish it and set up your
             brand.

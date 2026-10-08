@@ -11,7 +11,7 @@ const PORTRAIT = { baseUrl: '/media/sequence-portrait-lite', pattern: 'frame-{##
 
 const STEPS = [
   { n: '01', title: 'Film it', body: 'Walk the home slowly with a phone, gimbal or drone. Thirty to ninety seconds is ideal.' },
-  { n: '02', title: 'Upload', body: 'Drop the video into YE Studio. It becomes a smooth walkthrough in the background.' },
+  { n: '02', title: 'Upload', body: 'Drop the video into Scrollwalk Studio. It becomes a smooth walkthrough in the background.' },
   { n: '03', title: 'Tell the story', body: 'Add captions at the moments that matter, then pick sections and a style for the page.' },
   { n: '04', title: 'Publish and share', body: 'One link for your bio, your DMs or your website. Every enquiry comes straight to you.' },
 ]
@@ -20,7 +20,7 @@ const FEATURES = [
   { title: 'Scroll walkthroughs', body: 'Buyers move through the home at their own pace. Scroll slowly to linger, quickly to move on, back to look again.' },
   { title: 'Built for phones', body: 'Landscape footage turns sideways on upright phones, or sits between editorial bars. Vertical video plays as is.' },
   { title: 'Your brand, not ours', body: 'Your name, logo, colours and words. Buyers see a premium agency site, never a software badge.' },
-  { title: 'Leads go to you', body: 'An enquiry form, your booking link and a WhatsApp button on every home. YE never contacts your buyers.' },
+  { title: 'Leads go to you', body: 'An enquiry form, your booking link and a WhatsApp button on every home. Scrollwalk never contacts your buyers.' },
   { title: 'Bring your team', body: 'Invite agents who publish their own listings under one brand, with Owner and Agent roles.' },
   { title: 'Ready for any market', body: 'Local currency, square feet or metres, and the licence fields your country expects.' },
 ]
@@ -28,7 +28,7 @@ const FEATURES = [
 const FAQ = [
   {
     q: 'Do I have to replace my current website?',
-    a: 'No. Many agents keep their site and point each View Property button at a YE page. Others use YE as their whole website. Both work from the same account.',
+    a: 'No. Many agents keep their site and point each View Property button at a Scrollwalk page. Others use Scrollwalk as their whole website. Both work from the same account.',
   },
   {
     q: 'What do I need to film a walkthrough?',
@@ -49,7 +49,7 @@ export function Landing() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    document.title = 'YE · Listings your buyers can walk through'
+    document.title = 'Scrollwalk · Homes you can walk through'
     const onScroll = () => setScrolled(window.scrollY > 24)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -60,7 +60,7 @@ export function Landing() {
     <div className="ye">
       <header className={`ye-nav ${scrolled ? 'is-scrolled' : ''}`}>
         <div className="ye-nav__inner">
-          <Link to="/" className="ye-nav__brand" aria-label="YE home">
+          <Link to="/" className="ye-nav__brand" aria-label="Scrollwalk home">
             <YeMark />
           </Link>
           <nav className="ye-nav__links" aria-label="Main">
@@ -90,7 +90,7 @@ export function Landing() {
                 Listings your buyers can <em>walk through.</em>
               </h1>
               <p className="ye-hero__lede">
-                YE turns a phone video into a scroll-controlled walkthrough on your own premium website. Share one link in your bio, your
+                Scrollwalk turns a phone video into a scroll-controlled walkthrough on your own premium website. Share one link in your bio, your
                 DMs, or behind the View Property button on the site you already have.
               </p>
               <div className="ye-hero__ctas">
@@ -112,7 +112,7 @@ export function Landing() {
                     <i />
                     <i />
                   </span>
-                  <span className="ye-browser__url">ye.yniidi.com/your-name/lakeview-villa</span>
+                  <span className="ye-browser__url">scrollwalk.com/your-name/lakeview-villa</span>
                 </div>
                 <div className="ye-browser__screen">
                   <FrameLoop source={LANDSCAPE} poster="/media/sequence/frame-001.jpg" />
@@ -140,13 +140,13 @@ export function Landing() {
 
         <section className="ye-ways" aria-labelledby="ways-title">
           <div className="ye-wrap">
-            <p className="ye-eyebrow">Two ways to use YE</p>
+            <p className="ye-eyebrow">Two ways to use Scrollwalk</p>
             <h2 id="ways-title" className="ye-h2">
               Your whole website, or just the homes that need to <em>move.</em>
             </h2>
             <div className="ye-ways__grid">
               <article className="ye-card ye-way">
-                <code className="ye-way__url">ye.yniidi.com/your-name</code>
+                <code className="ye-way__url">scrollwalk.com/your-name</code>
                 <h3>Your agency website</h3>
                 <p>A complete site with your brand, your homes, services, neighbourhoods, testimonials and enquiries. Ready the day you sign up.</p>
                 <a href={base} className="ye-link">
@@ -154,7 +154,7 @@ export function Landing() {
                 </a>
               </article>
               <article className="ye-card ye-way">
-                <code className="ye-way__url">ye.yniidi.com/your-name/lakeview-villa</code>
+                <code className="ye-way__url">scrollwalk.com/your-name/lakeview-villa</code>
                 <h3>Property pages, anywhere</h3>
                 <p>Keep the website you have. Point any View Property button, bio link or DM at a page buyers can walk through.</p>
                 <a href={listing('aurelia')} className="ye-link">

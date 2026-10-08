@@ -25,7 +25,7 @@ function RealtorGate() {
   const { realtor } = useParams()
   const { slug, ready } = useRealtor()
   if (!ready) return <div className="page page--loading" aria-busy />
-  if (realtor !== slug) return <NotFound title="No realtor lives at this address." body="Check the link, or start your own site on YE." href="/" cta="Go to YE" />
+  if (realtor !== slug) return <NotFound title="No realtor lives at this address." body="Check the link, or start your own site on Scrollwalk." href="/" cta="Go to Scrollwalk" />
   return <Outlet />
 }
 

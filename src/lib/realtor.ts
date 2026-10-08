@@ -1,7 +1,7 @@
 import { slugify } from './format'
 import { useSite } from './site'
 
-/** Top-level words a realtor slug can never take, because YE's own pages live there. */
+/** Top-level words a realtor slug can never take, because Scrollwalk's own pages live there. */
 export const RESERVED_SLUGS = new Set([
   'about',
   'admin',

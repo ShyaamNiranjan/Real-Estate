@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom'
 
-/** Placeholder mark until the product name is chosen. */
 export function YeMark() {
   return (
     <span className="ye-mark">
-      YE<i aria-hidden />
+      scrollwalk<i aria-hidden />
     </span>
   )
 }
@@ -15,7 +14,7 @@ export function YeFooter() {
       <div className="ye-wrap ye-footer__inner">
         <div>
           <YeMark />
-          <p>Listings your buyers can walk through.</p>
+          <p>Homes you can walk through. Just scroll.</p>
         </div>
         <nav aria-label="Footer">
           <a href="/#how">How it works</a>
@@ -23,7 +22,7 @@ export function YeFooter() {
           <Link to="/signup?start=free">Try it free</Link>
           <Link to="/studio">Sign in</Link>
         </nav>
-        <p className="ye-footer__base">© {new Date().getFullYear()} YNIIDI · Internal prototype, working name “YE”</p>
+        <p className="ye-footer__base">© {new Date().getFullYear()} Scrollwalk · A YNIIDI company</p>
       </div>
     </footer>
   )

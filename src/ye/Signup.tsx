@@ -23,7 +23,7 @@ export function Signup() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    document.title = free ? 'Try YE free' : 'Get started · YE'
+    document.title = free ? 'Try Scrollwalk free' : 'Get started · Scrollwalk'
   }, [free])
 
   const steps: Step[] = free ? ['account', 'done'] : ['account', 'plan', 'pay', 'done']
@@ -47,7 +47,7 @@ export function Signup() {
   return (
     <div className="ye ye-signup">
       <div className="ye-signup__panel">
-        <Link to="/" className="ye-signup__brand" aria-label="YE home">
+        <Link to="/" className="ye-signup__brand" aria-label="Scrollwalk home">
           <YeMark />
         </Link>
 
@@ -180,7 +180,7 @@ export function Signup() {
             <span className="ye-done__badge" aria-hidden>
               ✓
             </span>
-            <h1 className="ye-signup__title">{free ? `You're in, ${name.split(' ')[0]}.` : `Welcome to YE, ${name.split(' ')[0]}.`}</h1>
+            <h1 className="ye-signup__title">{free ? `You're in, ${name.split(' ')[0]}.` : `Welcome to Scrollwalk, ${name.split(' ')[0]}.`}</h1>
             <p className="ye-signup__lede">
               {free
                 ? 'Next: create your listing and upload a walkthrough video. It stays private until you subscribe.'

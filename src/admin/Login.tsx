@@ -36,10 +36,10 @@ export function Login() {
       <div className="a-auth__art" aria-hidden>
         <img src={settings.hero_image_url ?? '/media/sequence/frame-001.jpg'} alt="" />
         <div className="a-auth__art-veil" />
-        <p className="a-auth__art-brand">YE</p>
+        <p className="a-auth__art-brand">scrollwalk</p>
       </div>
       <div className="a-auth__panel">
-        <p className="a-auth__brand">YE · Studio</p>
+        <p className="a-auth__brand">Scrollwalk · Studio</p>
         <h1 className="a-auth__title">Sign in to your workspace.</h1>
         <p className="a-auth__body">
           Prototype: signup does not create real accounts yet. Sign in with the existing {settings.brand_name} admin account.
@@ -92,7 +92,7 @@ export function Login() {
           </button>
         </form>
         <Link to="/" className="a-auth__back">
-          ← Back to YE
+          ← Back to Scrollwalk
         </Link>
       </div>
     </div>
