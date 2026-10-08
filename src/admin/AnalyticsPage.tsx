@@ -411,22 +411,37 @@ function ListingsTable({ data, titles, onPick }: { data: Summary; titles: Record
 
 function ListingActions({ listing, path }: { listing: ListingRow; path: string }) {
   const toast = useToast()
-  const copy = async (channel: string, label: string) => {
-    await navigator.clipboard.writeText(shareUrl(path, channel))
-    toast(`${label} link copied`)
+  const [channel, setChannel] = useState('')
+  const url = shareUrl(path, channel)
+  const copy = async () => {
+    await navigator.clipboard.writeText(url)
+    toast('Link copied')
   }
   return (
     <section className="a-card an-share">
       <div>
         <h2 className="a-card__title">{listing.title}</h2>
-        <p className="a-muted">Share a tagged link on each channel so every visit is credited to the right place.</p>
         <div className="an-share__links">
-          {SHARE_CHANNELS.map((c) => (
-            <button key={c.key} type="button" className="a-btn a-btn--ghost a-btn--sm" onClick={() => void copy(c.key, c.label)}>
-              Copy {c.label} link
-            </button>
-          ))}
+          <label className="an-share__on">
+            <span>Sharing on</span>
+            <select className="a-input" value={channel} onChange={(e) => setChannel(e.target.value)}>
+              <option value="">Anywhere</option>
+              {SHARE_CHANNELS.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <code className="an-share__url">{url.replace(/^https?:\/\//, '')}</code>
+          <button type="button" className="a-btn a-btn--ghost a-btn--sm" onClick={() => void copy()}>
+            Copy link
+          </button>
         </div>
+        <p className="a-muted an-share__hint">
+          Same page either way. Picking where you'll post it lets Analytics credit visits from apps like WhatsApp, which otherwise show up as
+          Direct.
+        </p>
       </div>
       <a className="a-btn a-btn--primary" href={`${path}/report`} target="_blank" rel="noreferrer">
         Seller report ↗

@@ -3852,3 +3852,36 @@ a.a-stat:hover {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.an-share__links {
+  align-items: center;
+}
+
+.an-share__on {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--a-soft);
+}
+
+.an-share__on select {
+  width: auto;
+}
+
+.an-share__url {
+  max-width: 100%;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--a-radius);
+  background: var(--a-sunk);
+  font-size: 0.78rem;
+  color: var(--a-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-share__hint {
+  margin: 0.7rem 0 0;
+  font-size: 0.78rem;
+}

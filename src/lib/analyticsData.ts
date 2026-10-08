@@ -123,5 +123,5 @@ export const SHARE_CHANNELS = [
 ] as const
 
 export function shareUrl(path: string, channel: string) {
-  return `${window.location.origin}${path}?src=${channel}`
+  return `${window.location.origin}${path}${channel ? `?src=${channel}` : ''}`
 }
