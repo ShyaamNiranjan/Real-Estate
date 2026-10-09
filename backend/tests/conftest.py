@@ -1,0 +1,52 @@
+"""Tests run against scrollwalk_test, never scrollwalk_dev.
+
+The app's own settings are pointed at the test database before anything connects, so the
+real tenant_session()/public_session() helpers are what gets tested.
+"""
+
+import os
+from argparse import Namespace
+from pathlib import Path
+
+import pytest
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, text
+
+from app.config import get_settings
+
+_settings = get_settings()
+for name in ("migrations_database_url", "database_url", "public_database_url", "hq_database_url"):
+    test_url = getattr(_settings, f"test_{name}")
+    if not test_url or "scrollwalk_test" not in test_url:
+        raise RuntimeError(f"TEST_{name.upper()} must point at scrollwalk_test")
+    os.environ[name.upper()] = test_url
+get_settings.cache_clear()
+
+BACKEND = Path(__file__).resolve().parent.parent
+TABLES = ("memberships", "user_credentials", "workspaces", "users")
+
+
+def _alembic(url: str) -> Config:
+    cfg = Config(str(BACKEND / "alembic.ini"))
+    cfg.set_main_option("script_location", str(BACKEND / "migrations"))
+    cfg.cmd_opts = Namespace(x=[f"url={url}"])
+    return cfg
+
+
+@pytest.fixture(scope="session")
+def owner_engine():
+    settings = get_settings()
+    cfg = _alembic(settings.migrations_database_url)
+    command.downgrade(cfg, "base")
+    command.upgrade(cfg, "head")
+    engine = create_engine(settings.migrations_database_url)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def clean(owner_engine):
+    with owner_engine.begin() as conn:
+        conn.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+    yield
