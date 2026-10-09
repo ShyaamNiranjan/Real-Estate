@@ -1,0 +1,483 @@
+/* ==========================================================================
+   Additions to ye.css for the real sign-in, code and waitlist screens.
+   Same tokens and voice as the prototype; nothing here restyles existing classes.
+   ========================================================================== */
+
+.ye-signup__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ye-field > label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ye-soft);
+}
+
+.ye-field__optional {
+  font-weight: 500;
+  color: var(--ye-mute);
+}
+
+.ye-field input {
+  width: 100%;
+}
+
+.ye-field.is-invalid input,
+.ye-field.is-invalid .ye-code__slot {
+  border-color: #e79a86;
+}
+
+.ye-field__error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #f0ab98;
+}
+
+.ye-field__affix {
+  position: relative;
+}
+
+.ye-field__prefix {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95rem;
+  color: var(--ye-mute);
+  pointer-events: none;
+}
+
+.ye-field__affix:has(.ye-field__prefix) input {
+  padding-left: 2.1rem;
+}
+
+.ye-field__affix--end input {
+  padding-right: 4.6rem;
+}
+
+.ye-field__toggle {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ye-soft);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.ye-field__toggle:hover {
+  color: var(--ye-ink);
+  background: rgba(243, 241, 236, 0.06);
+}
+
+/* Buttons */
+.ye-btn--google {
+  border-color: var(--ye-line-2);
+  background: #f3f1ec;
+  color: #1f1f1f;
+}
+
+.ye-btn--google:hover {
+  background: #fff;
+}
+
+.ye-btn:disabled {
+  opacity: 0.7;
+}
+
+.ye-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ye-spin 0.8s linear infinite;
+}
+
+@keyframes ye-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ye-textbtn {
+  justify-self: start;
+  min-height: 32px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ye-soft);
+  transition: color 0.2s ease;
+}
+
+.ye-textbtn:hover:not(:disabled) {
+  color: var(--ye-ink);
+}
+
+.ye-textbtn:disabled {
+  color: var(--ye-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.ye-textbtn--accent {
+  min-height: 0;
+  font-size: inherit;
+  color: var(--ye-accent);
+}
+
+.ye-textlink {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ye-accent);
+}
+
+.ye-textlink:hover {
+  color: var(--ye-ink);
+}
+
+.ye-form__aside {
+  margin: -0.4rem 0 0;
+  text-align: right;
+}
+
+.ye-signup__note--center {
+  margin-top: -0.4rem;
+  text-align: center;
+  font-size: 0.76rem;
+}
+
+.ye-signup__note a {
+  color: var(--ye-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ye-signup__note a:hover {
+  color: var(--ye-ink);
+}
+
+.ye-or {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0.2rem 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ye-mute);
+}
+
+.ye-or::before,
+.ye-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ye-line-2);
+}
+
+/* Alerts */
+.ye-alert-slot:empty {
+  display: none;
+}
+
+.ye-alert {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.ye-alert--error {
+  border-color: rgba(231, 154, 134, 0.45);
+  background: rgba(231, 154, 134, 0.08);
+  color: #f3c3b6;
+}
+
+.ye-alert--notice {
+  border-color: rgba(216, 193, 154, 0.4);
+  background: rgba(216, 193, 154, 0.07);
+  color: var(--ye-ink);
+}
+
+/* Terms checkbox */
+.ye-check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.75rem;
+  align-items: start;
+}
+
+.ye-check input {
+  width: 20px;
+  height: 20px;
+  margin: 0.1rem 0 0;
+  accent-color: var(--ye-accent);
+  cursor: pointer;
+}
+
+.ye-check label {
+  font-size: 0.86rem;
+  color: var(--ye-soft);
+  cursor: pointer;
+}
+
+.ye-check label a {
+  color: var(--ye-ink);
+  text-decoration: underline;
+  text-decoration-color: rgba(216, 193, 154, 0.6);
+  text-underline-offset: 3px;
+}
+
+.ye-check label a:hover {
+  color: var(--ye-accent);
+}
+
+.ye-check .ye-field__error {
+  grid-column: 2;
+}
+
+.ye-check.is-invalid input {
+  outline: 2px solid #e79a86;
+  outline-offset: 2px;
+}
+
+/* Six-slot code input */
+.ye-code__box {
+  position: relative;
+}
+
+.ye-code__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: transparent !important;
+  caret-color: transparent;
+  font-size: 16px !important;
+  letter-spacing: 2.4em;
+  outline: none !important;
+}
+
+.ye-code__input::selection {
+  background: transparent;
+}
+
+.ye-code__slots {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.ye-code__slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 60px;
+  border: 1px solid var(--ye-line-2);
+  border-radius: 12px;
+  background: var(--ye-raise);
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--ye-ink);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ye-code__slot:nth-child(3) {
+  margin-right: 0.5rem;
+}
+
+.ye-code__slot.is-active {
+  border-color: var(--ye-accent);
+  box-shadow: 0 0 0 3px rgba(216, 193, 154, 0.22);
+}
+
+.ye-code__slot.is-active:not(.is-filled)::after {
+  content: '';
+  width: 2px;
+  height: 26px;
+  background: var(--ye-accent);
+  animation: ye-caret 1.05s steps(1) infinite;
+}
+
+@keyframes ye-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.ye-code__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+@media (max-width: 380px) {
+  .ye-code__slots {
+    gap: 0.35rem;
+  }
+
+  .ye-code__slot {
+    height: 52px;
+  }
+
+  .ye-code__slot:nth-child(3) {
+    margin-right: 0.25rem;
+  }
+}
+
+/* Hero note link */
+.ye-hero__notelink {
+  color: var(--ye-soft);
+  text-decoration: underline;
+  text-decoration-color: rgba(216, 193, 154, 0.5);
+  text-underline-offset: 3px;
+}
+
+.ye-hero__notelink:hover {
+  color: var(--ye-ink);
+}
+
+/* Waitlist section */
+.ye-waitlist {
+  padding: clamp(4rem, 9vw, 7rem) 0;
+  border-top: 1px solid var(--ye-line);
+  background: radial-gradient(700px 420px at 85% 30%, rgba(216, 193, 154, 0.09), transparent 70%);
+  scroll-margin-top: 72px;
+}
+
+.ye-waitlist__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: center;
+}
+
+.ye-waitlist__copy p:not(.ye-eyebrow) {
+  max-width: 30rem;
+  margin: 1.3rem 0 0;
+  color: var(--ye-soft);
+  font-size: 1.05rem;
+}
+
+.ye-waitlist__card {
+  padding: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.ye-waitlist__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.ye-waitlist__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ye-waitlist__fine {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ye-mute);
+}
+
+.ye-waitlist__done {
+  display: grid;
+  justify-items: start;
+  gap: 0.9rem;
+  outline: none;
+}
+
+.ye-waitlist__done-title {
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.ye-waitlist__done p {
+  margin: 0;
+  color: var(--ye-soft);
+}
+
+.ye-waitlist__done strong {
+  color: var(--ye-ink);
+  font-weight: 600;
+}
+
+.ye-waitlist-page .ye-waitlist__form {
+  max-width: 440px;
+}
+
+.ye-waitlist-page .ye-waitlist__row {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 980px) {
+  .ye-waitlist__inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ye-waitlist__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Plain pages (legal placeholders, 404) */
+.ye-plain {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ye-plain__head {
+  padding: calc(1.6rem + var(--safe-top)) var(--ye-pad) 0;
+  max-width: var(--ye-wrap);
+  width: 100%;
+  margin: 0 auto;
+}
+
+.ye-plain__main {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(4rem, 12vh, 8rem) var(--ye-pad) 5rem;
+}
+
+.ye-plain__main p:not(.ye-eyebrow) {
+  margin: 1.2rem 0 0;
+  color: var(--ye-soft);
+}
+
+.ye-plain__main p a {
+  color: var(--ye-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ye-plain__main .ye-hero__ctas {
+  margin-top: 2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ye-code__slot.is-active:not(.is-filled)::after {
+    animation: none;
+  }
+}
