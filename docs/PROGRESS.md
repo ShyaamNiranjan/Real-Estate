@@ -2,6 +2,23 @@
 
 Update at the end of every working session: what was done, what's next, what's blocked. Newest first.
 
+## Oct 10, 2026 — plan
+- Build runs in parallel: backend (Cursor agent) slice by slice; frontend (Claude) starts now from `docs/FRONTEND.md`.
+- Founder sets up accounts on Oct 11: merchant of record application, Resend + DNS for `mail.scrollwalk.com`, Gemini key, then Google OAuth, R2, hosting.
+
+## Frontend waiting on backend
+- Waitlist endpoint (backend slice 4).
+
+## Oct 10, 2026 — slice 3: workspace setup
+- Done:
+  - Migration `0003_workspace_setup`: workspace_profiles, username_holds, roles, role_permissions; member licence number; roles can only be assigned within their own workspace (composite foreign key).
+  - Usernames: rules, reserved words and brands, three live suggestions, claim only by the Admin of a trialing/active/grace workspace, `confirm_permanent` required; a database trigger refuses any change once set; held names of deleted accounts stay blocked.
+  - Profile: About you, country → compliance profile (US, GB, AE, IN, CA, AU, EU, OTHER) with currency and unit defaults, compliance fields validated per profile, contact methods (international phone format, https booking link), style preset, time zone.
+  - `publish_blockers` computed for the workspace; setup guide progress.
+  - Permission catalogue (20 switches, no Admin-only powers), role suggestions, role CRUD with "can't grant more than you have", role-in-use protection, team plans only.
+  - 84 tests passing.
+- Next: slice 4, listings (create, details, sections, slugs with 301 history, hero settings, statuses, approval flow, trial counting) and the waitlist endpoint.
+
 ## Oct 10, 2026 — slice 2: sign-up and sign-in
 - Done:
   - Migration `0002_auth`: sessions, email_codes, rate_limits, legal_acceptances (all forced row-level security).

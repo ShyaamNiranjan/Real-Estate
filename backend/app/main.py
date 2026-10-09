@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from app import auth, errors, google
+from app import auth, errors, google, team, workspace
 from app.config import get_settings
 from app.db import public_session
 from app.deps import SAFE_METHODS
@@ -12,6 +12,8 @@ app = FastAPI(title="Scrollwalk API", version="0.1.0", openapi_url="/api/v1/open
 errors.install(app)
 app.include_router(auth.router)
 app.include_router(google.router)
+app.include_router(workspace.router)
+app.include_router(team.router)
 
 
 @app.middleware("http")

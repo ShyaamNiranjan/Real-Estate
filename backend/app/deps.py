@@ -46,5 +46,11 @@ def signed_in(request: Request, auth: Auth = Depends(current_auth)) -> Auth:
     return auth
 
 
+def in_workspace(auth: Auth = Depends(signed_in)) -> Auth:
+    if auth.workspace_id is None:
+        raise ApiError(409, "no_workspace", "You're not in a workspace right now.")
+    return auth
+
+
 def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"

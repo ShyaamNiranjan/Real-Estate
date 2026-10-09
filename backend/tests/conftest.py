@@ -25,6 +25,7 @@ get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
+    "role_permissions", "roles", "workspace_profiles", "username_holds",
     "sessions", "email_codes", "rate_limits", "legal_acceptances",
     "memberships", "user_credentials", "workspaces", "users",
 )
