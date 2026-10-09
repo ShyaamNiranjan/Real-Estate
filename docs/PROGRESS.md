@@ -7,7 +7,23 @@ Update at the end of every working session: what was done, what's next, what's b
 - Founder sets up accounts on Oct 11: merchant of record application, Resend + DNS for `mail.scrollwalk.com`, Gemini key, then Google OAuth, R2, hosting.
 
 ## Frontend waiting on backend
-- Waitlist endpoint (backend slice 4).
+- (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
+
+## Oct 10, 2026 — slice 4: listings and waitlist
+- Done:
+  - Migration `0004_listings`: listings, listing_sections, listing_hero, walkthrough_beats, listing_slug_history, compliance_acknowledgements, waitlist.
+  - **Draft and live are separate**: Publish takes a snapshot (`live`) that is all the public can read; later edits show `has_unpublished_changes` until the next Publish.
+  - Composite foreign keys tie every section, hero, caption, slug-history row and listing agent to the same workspace as its listing (a tested cross-tenant write is refused by the database).
+  - Slugs from titles (accents folded, `-2` for duplicates, section words avoided); renaming a live listing records the old address for a 301 at the next Publish; old live addresses are never reused.
+  - Section library (9 types, fixed layout variants, strict content schemas), default set of 8 sections on create, "At a glance" auto-filled from details until edited, add after / edit / hide / delete / reorder.
+  - Hero settings, walkthrough captions (up to 20).
+  - Publishing: blockers (plan, workspace setup, title, country listing fields such as the EU energy rating), one-time compliance acknowledgement, approval flow for roles without publish (first publish and later changes; the live version stays up while changes wait), unpublish, mark sold.
+  - Limits: free preview 1 listing; trial 3 listings ever (deleting doesn't free a slot), each live 60 days then `expired`; plan limit counts active listings; grace = no new listings, offline = read-only.
+  - Listing agent: needs the permission and, in licensed countries, a licence number.
+  - Waitlist: `POST /api/v1/waitlist`, always 202, confirmation email once, rate-limited, unreadable by the API.
+  - 108 tests passing.
+- Not yet: walkthrough-ready check before publishing (comes with the media slice).
+- Next: slice 5, media (R2 presigned uploads with a local stand-in until keys arrive, gallery, floor plans, hero image, walkthrough upload and the processing job queue).
 
 ## Oct 10, 2026 — slice 3: workspace setup
 - Done:

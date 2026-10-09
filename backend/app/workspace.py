@@ -167,15 +167,19 @@ def blockers(row) -> list[Blocker]:
     return found
 
 
-def load_workspace(s: Session, access: Access) -> WorkspaceOut:
-    _ensure_profile(s, access.workspace_id)
-    row = s.execute(
+def workspace_row(s: Session, workspace_id: UUID):
+    _ensure_profile(s, workspace_id)
+    return s.execute(
         text("""SELECT w.*, p.brokerage_name, p.photo_url, p.contact_email, p.contact_phone, p.whatsapp,
                        p.booking_url, p.style_preset, p.compliance, p.setup
                 FROM workspaces w JOIN workspace_profiles p ON p.workspace_id = w.id
                 WHERE w.id = :w"""),
-        {"w": access.workspace_id},
+        {"w": workspace_id},
     ).one()
+
+
+def load_workspace(s: Session, access: Access) -> WorkspaceOut:
+    row = workspace_row(s, access.workspace_id)
     return WorkspaceOut(
         id=row.id, username=row.username, display_name=row.display_name, kind=row.kind,
         plan_key=row.plan_key, subscription_state=row.subscription_state,

@@ -77,6 +77,7 @@ SUGGESTIONS = [
 class Access:
     user_id: UUID
     workspace_id: UUID
+    membership_id: UUID
     is_admin: bool
     permissions: frozenset[str]
 
@@ -97,12 +98,13 @@ class Access:
 
 def load_access(s: Session, user_id: UUID, workspace_id: UUID) -> Access:
     row = s.execute(
-        text("""SELECT m.is_admin, coalesce(array_agg(rp.permission) FILTER (WHERE rp.permission IS NOT NULL), '{}') AS perms
+        text("""SELECT m.id, m.is_admin,
+                       coalesce(array_agg(rp.permission) FILTER (WHERE rp.permission IS NOT NULL), '{}') AS perms
                 FROM memberships m LEFT JOIN role_permissions rp ON rp.role_id = m.role_id
                 WHERE m.workspace_id = :w AND m.user_id = :u AND m.removed_at IS NULL
-                GROUP BY m.is_admin"""),
+                GROUP BY m.id, m.is_admin"""),
         {"w": workspace_id, "u": user_id},
     ).first()
     if row is None:
         raise ApiError(403, "not_a_member", "You're no longer a member of this workspace.")
-    return Access(user_id, workspace_id, row.is_admin, frozenset(row.perms) & ALL_PERMISSIONS)
+    return Access(user_id, workspace_id, row.id, row.is_admin, frozenset(row.perms) & ALL_PERMISSIONS)
