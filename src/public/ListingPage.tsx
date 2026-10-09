@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ScrollExperience } from '../components/ScrollExperience'
+import { openingFrame, ScrollExperience } from '../components/ScrollExperience'
 import { reportDepth, track, usePageview } from '../lib/analytics'
 import { fetchListingBySlug } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { expandFramePattern, joinUrl, listingFacts } from '../lib/format'
 import { applyEdit, draftToRows, factsFromListing, listingJsonLd, loadDraft, saveDraft, type ListingDraft } from '../lib/listingCopy'
+import { fallbackHeroImage, useListingHero } from '../lib/listingHero'
 import { useProto } from '../lib/prototype'
 import { useRealtor } from '../lib/realtor'
 import { useDocumentTitle } from '../lib/site'
-import { asMobileMode, asObject, type ExperienceConfig, type FrameSequence, type ListingWithRelations } from '../types/content'
+import { asMobileMode, asObject, type ExperienceConfig, type FrameSequence, type ListingWithRelations, type MobileMode } from '../types/content'
 import type { ListingMediaRow } from '../types/database'
 import { EnquiryForm } from './EnquiryForm'
 import { NotFound } from './NotFound'
 import { FloorPlans } from './FloorPlans'
+import { HeroBanner, heroContent, useHeroCurtain, type HeroContent } from './ListingHero'
 import { EditContext, Editable, Sections, type EditCommit } from './Sections'
 import { SiteFooter } from './SiteFooter'
 import { SiteHeader } from './SiteHeader'
@@ -145,6 +147,27 @@ function DraftSeo({ draft, listing }: { draft: ListingDraft; listing: ListingWit
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
 }
 
+function LiveHero({
+  content,
+  image,
+  sequences,
+  mobileMode,
+}: {
+  content: HeroContent
+  image: string
+  sequences: Partial<Record<'landscape' | 'portrait', FrameSequence>>
+  mobileMode: MobileMode
+}) {
+  const { phase, first, enter } = useHeroCurtain(true)
+  const [frame, setFrame] = useState(() => openingFrame(sequences, mobileMode))
+  useEffect(() => {
+    const update = () => setFrame(openingFrame(sequences, mobileMode))
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [sequences, mobileMode])
+  return <HeroBanner content={content} image={image} frame={frame} phase={phase} first={first} onEnter={enter} />
+}
+
 function DraftStill({ listing, cover, firstFrame }: { listing: ListingWithRelations; cover: string | null; firstFrame: string | null }) {
   const image = firstFrame ?? cover
   return (
@@ -206,6 +229,16 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
     return seq ? joinUrl(seq.baseUrl, expandFramePattern(seq.pattern, 1)) : null
   }, [sequences])
 
+  const heroSettings = useListingHero(listing.id)
+  const heroImage = useMemo(() => {
+    if (heroSettings.image) return heroSettings.image
+    const seq = sequences.landscape ?? sequences.portrait
+    const lastFrame = seq ? joinUrl(seq.baseUrl, expandFramePattern(seq.pattern, seq.frameCount)) : null
+    return fallbackHeroImage({ cover, gallery: gallery.map((g) => g.src), firstFrame, lastFrame }).src
+  }, [heroSettings.image, sequences, cover, gallery, firstFrame])
+  const withHero = immersive && !draft && !portraitDemo && heroSettings.enabled && Boolean(heroImage)
+    && new URLSearchParams(window.location.search).get('hero') !== '0'
+
   return (
     <div className={`page page--listing ${immersive && !draft ? 'is-immersive' : 'is-photo'}${draft ? ' page--draft' : ''}`}>
       <SiteHeader variant="listing" onEnquire={enquire} />
@@ -214,7 +247,17 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
       {draft ? (
         <DraftStill listing={listing} cover={cover} firstFrame={immersive ? firstFrame : null} />
       ) : immersive ? (
+        <>
+        {withHero && (
+          <LiveHero
+            content={heroContent(listing, heroSettings)}
+            image={heroImage!}
+            sequences={sequences}
+            mobileMode={asMobileMode(experience.mobile_mode)}
+          />
+        )}
         <ScrollExperience
+          bare={withHero}
           key={`${listing.id}${portraitDemo ? ':portrait' : ''}`}
           sequences={portraitDemo ? { portrait: PORTRAIT_DEMO } : sequences}
           label={`${listing.title} walkthrough`}
@@ -228,6 +271,7 @@ function Listing({ listing, draft }: { listing: ListingWithRelations; draft?: Li
           mobileMode={asMobileMode(experience.mobile_mode)}
           onProgress={reportDepth}
         />
+        </>
       ) : (
         <PhotoHero listing={listing} cover={cover} />
       )}

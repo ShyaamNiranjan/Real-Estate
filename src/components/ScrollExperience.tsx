@@ -34,6 +34,8 @@ type Props = {
   mobileMode?: MobileMode
   /** Called with walkthrough progress (0–1) as the visitor scrolls. */
   onProgress?: (progress: number) => void
+  /** A hero banner sits in front and owns the opening copy, so the first frame shows none. */
+  bare?: boolean
 }
 
 type View = { variant: Variant; portrait: boolean }
@@ -81,6 +83,15 @@ function frameSrc(seq: FrameSequence, index: number) {
   return joinUrl(seq.baseUrl, expandFramePattern(seq.pattern, index + 1))
 }
 
+/** The first frame this screen will open on, and whether the player fills the screen with it. */
+export function openingFrame(sequences: Partial<Record<Variant, FrameSequence>>, mobileMode: MobileMode = 'rotate') {
+  const view = getView()
+  const layout = resolveLayout(view, Boolean(sequences.portrait), Boolean(sequences.landscape), mobileMode)
+  const seq = sequences[view.variant] ?? sequences.landscape ?? sequences.portrait
+  if (!seq) return null
+  return { src: frameSrc(seq, 0), fills: layout === 'cover' }
+}
+
 /** Coarse-to-fine order so the whole timeline is scrubbable before every frame lands. */
 function loadOrder(total: number) {
   const order: number[] = []
@@ -119,7 +130,7 @@ function drawContain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: nu
   ctx.drawImage(img, (w - dw) / 2, Math.round((h - dh) * FIT_BIAS), dw, dh)
 }
 
-export function ScrollExperience({ sequences, hero, beats, label, mobileMode = 'rotate', onProgress }: Props) {
+export function ScrollExperience({ sequences, hero, beats, label, mobileMode = 'rotate', onProgress, bare = false }: Props) {
   const onProgressRef = useRef(onProgress)
   onProgressRef.current = onProgress
   const trackRef = useRef<HTMLDivElement>(null)
@@ -587,15 +598,19 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
 
         <div className="scroll-stage__ui">
           <div className="scroll-hero" ref={heroRef}>
-            <div className="scroll-hero__copy">
-              {hero.brand && <p className="scroll-hero__brand">{hero.brand}</p>}
-              {hero.line && <h1 className="scroll-hero__line">{hero.line}</h1>}
-              {hero.support && <p className="scroll-hero__support">{hero.support}</p>}
-            </div>
-            <div className="scroll-hero__hint">
-              <span>{hero.scrollHint ?? 'Scroll to enter'}</span>
-              <span className="scroll-hero__hint-line" />
-            </div>
+            {!bare && (
+              <>
+                <div className="scroll-hero__copy">
+                  {hero.brand && <p className="scroll-hero__brand">{hero.brand}</p>}
+                  {hero.line && <h1 className="scroll-hero__line">{hero.line}</h1>}
+                  {hero.support && <p className="scroll-hero__support">{hero.support}</p>}
+                </div>
+                <div className="scroll-hero__hint">
+                  <span>{hero.scrollHint ?? 'Scroll to enter'}</span>
+                  <span className="scroll-hero__hint-line" />
+                </div>
+              </>
+            )}
             {rotate && (
               <div className="scroll-cue scroll-cue--turn" aria-hidden>
                 <svg className="scroll-cue__icon scroll-cue__icon--turn" viewBox="0 0 40 40" fill="none">

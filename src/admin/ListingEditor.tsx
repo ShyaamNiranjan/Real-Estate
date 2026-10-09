@@ -7,6 +7,7 @@ import { AiSections } from './AiSections'
 import { deleteListing, getListing, listMedia, listSections } from './api'
 import { DetailsTab } from './DetailsTab'
 import { ExperienceTab } from './ExperienceTab'
+import { HeroTab } from './HeroTab'
 import { MediaTab } from './MediaTab'
 import { SectionsTab } from './SectionsTab'
 import { ConfirmButton, Spinner, StatusMark, errorMessage, useToast } from './ui'
@@ -19,6 +20,7 @@ export type EditorData = {
 
 const TABS = [
   { key: 'details', label: 'Details' },
+  { key: 'hero', label: 'Hero' },
   { key: 'media', label: 'Media' },
   { key: 'sections', label: 'Sections' },
   { key: 'experience', label: 'Walkthrough' },
@@ -76,7 +78,7 @@ export function ListingEditor() {
 
   const { listing } = data
   const activeTab: TabKey = (TABS.some((t) => t.key === tab) ? tab : 'details') as TabKey
-  const tabs = TABS.filter((t) => t.key !== 'experience' || listing.experience_type === 'immersive')
+  const tabs = TABS.filter((t) => (t.key !== 'experience' && t.key !== 'hero') || listing.experience_type === 'immersive')
 
   const remove = async () => {
     try {
@@ -128,6 +130,7 @@ export function ListingEditor() {
       </nav>
 
       {activeTab === 'details' && <DetailsTab data={data} onSaved={setListing} />}
+      {activeTab === 'hero' && <HeroTab data={data} />}
       {activeTab === 'media' && <MediaTab data={data} setMedia={setMedia} onListing={setListing} />}
       {activeTab === 'sections' &&
         (classic ? (
