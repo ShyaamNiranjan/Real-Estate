@@ -22,11 +22,15 @@ function New-Secret {
 }
 
 $existing = @{}
+$otherLines = @()
 if (Test-Path $envFile) {
   Get-Content $envFile | ForEach-Object {
     if ($_ -match '^(DB_\w+_PASSWORD)=(.+)$') { $existing[$Matches[1]] = $Matches[2] }
+    elseif ($_ -match '^(SECRET_KEY)=(.+)$') { $existing[$Matches[1]] = $Matches[2] }
+    elseif ($_ -match '^[A-Z_]+=' -and $_ -notmatch '^(TEST_)?(MIGRATIONS_|PUBLIC_|HQ_)?DATABASE_URL=') { $otherLines += $_ }
   }
 }
+$secretKey = if ($existing["SECRET_KEY"]) { $existing["SECRET_KEY"] } else { New-Secret }
 $pw = @{}
 foreach ($k in "OWNER", "RW", "PUBLIC", "HQ") {
   $key = "DB_${k}_PASSWORD"
@@ -63,8 +67,10 @@ $lines = @(
   "TEST_MIGRATIONS_DATABASE_URL=$(Url 'app_owner' $pw.OWNER 'scrollwalk_test')",
   "TEST_DATABASE_URL=$(Url 'app_rw' $pw.RW 'scrollwalk_test')",
   "TEST_PUBLIC_DATABASE_URL=$(Url 'app_public' $pw.PUBLIC 'scrollwalk_test')",
-  "TEST_HQ_DATABASE_URL=$(Url 'app_hq' $pw.HQ 'scrollwalk_test')"
-)
+  "TEST_HQ_DATABASE_URL=$(Url 'app_hq' $pw.HQ 'scrollwalk_test')",
+  "",
+  "SECRET_KEY=$secretKey"
+) + $otherLines
 New-Item -ItemType Directory -Force -Path (Split-Path $envFile) | Out-Null
 Set-Content -Path $envFile -Value $lines -Encoding utf8
 

@@ -45,19 +45,24 @@ def hq_engine() -> Engine:
     return _engine(get_settings().hq_database_url)
 
 
+def set_context(session: Session, user_id: UUID | None, workspace_id: UUID | None) -> None:
+    """Only ever pass ids the server has already established (session lookup, a fresh uuid4)."""
+    session.execute(
+        _SET_CONTEXT,
+        {
+            "user_id": str(user_id) if user_id else "",
+            "workspace_id": str(workspace_id) if workspace_id else "",
+        },
+    )
+
+
 @contextmanager
 def tenant_session(
     user_id: UUID | None = None, workspace_id: UUID | None = None
 ) -> Iterator[Session]:
     """One transaction scoped to a user and (optionally) a workspace. Commits on success."""
     with Session(rw_engine()) as session, session.begin():
-        session.execute(
-            _SET_CONTEXT,
-            {
-                "user_id": str(user_id) if user_id else "",
-                "workspace_id": str(workspace_id) if workspace_id else "",
-            },
-        )
+        set_context(session, user_id, workspace_id)
         yield session
 
 

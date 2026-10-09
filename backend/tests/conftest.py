@@ -24,7 +24,10 @@ for name in ("migrations_database_url", "database_url", "public_database_url", "
 get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
-TABLES = ("memberships", "user_credentials", "workspaces", "users")
+TABLES = (
+    "sessions", "email_codes", "rate_limits", "legal_acceptances",
+    "memberships", "user_credentials", "workspaces", "users",
+)
 
 
 def _alembic(url: str) -> Config:
@@ -47,6 +50,27 @@ def owner_engine():
 
 @pytest.fixture(autouse=True)
 def clean(owner_engine):
+    from app import email
+
     with owner_engine.begin() as conn:
         conn.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+    email.outbox.clear()
     yield
+
+
+@pytest.fixture
+def client(owner_engine):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    return TestClient(app, base_url="https://testserver")
+
+
+@pytest.fixture
+def make_client(owner_engine):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    return lambda: TestClient(app, base_url="https://testserver")

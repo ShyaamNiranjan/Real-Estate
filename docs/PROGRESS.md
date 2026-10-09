@@ -2,6 +2,21 @@
 
 Update at the end of every working session: what was done, what's next, what's blocked. Newest first.
 
+## Oct 10, 2026 — slice 2: sign-up and sign-in
+- Done:
+  - Migration `0002_auth`: sessions, email_codes, rate_limits, legal_acceptances (all forced row-level security).
+  - Endpoints under `/api/v1/auth`: signup, verify, resend, login, password forgot/reset, me, logout, logout-all, email change/confirm, Google start/callback.
+  - Argon2id passwords; opaque session tokens stored hashed in a `__Host-` HttpOnly Secure SameSite=Lax cookie; signed CSRF token; Origin check on writes; security headers.
+  - 6-digit codes: hashed with the server key, 10 minutes, 5 guesses, 30-second resend cooldown, new code kills the old one.
+  - Database-backed rate limits per IP and per email.
+  - No account enumeration: signup, resend and forgot always answer 202; wrong email and wrong password look and time the same.
+  - Google: state + PKCE + nonce; takes over never-verified squatter accounts (their password is deleted).
+  - Terms and privacy acceptance recorded with version and method.
+  - Contract: `docs/api/openapi.json` + `docs/api/README.md` for the frontend; a test fails if the contract drifts.
+  - 57 tests passing.
+- Emails print to the server console until Resend is connected. Google needs `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `backend/.env`.
+- Next: slice 3, usernames and workspace setup (claim username with suggestions and reserved words, About you, contact methods, compliance profiles), and roles and permissions groundwork.
+
 ## Oct 10, 2026 — slice 1: backend skeleton
 - Done:
   - Local databases `scrollwalk_dev` and `scrollwalk_test` with roles `app_owner`, `app_rw`, `app_public`, `app_hq` (`scripts/db-bootstrap.ps1`).

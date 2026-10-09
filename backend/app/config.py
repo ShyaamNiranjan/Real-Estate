@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
@@ -20,6 +21,26 @@ class Settings(BaseSettings):
     test_database_url: str | None = None
     test_public_database_url: str | None = None
     test_hq_database_url: str | None = None
+
+    secret_key: str = Field(min_length=32)
+
+    app_url: str = "http://localhost:3000"
+    api_url: str = "http://localhost:8000"
+    allowed_origins: list[str] = ["http://localhost:3000"]
+    cookie_secure: bool = True
+    session_days: int = 30
+
+    terms_version: str = "2026-10-draft"
+    privacy_version: str = "2026-10-draft"
+
+    email_from: str = "Scrollwalk <no-reply@mail.scrollwalk.com>"
+
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+
+    @property
+    def google_redirect_uri(self) -> str:
+        return f"{self.api_url}/api/v1/auth/google/callback"
 
 
 @lru_cache
