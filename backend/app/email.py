@@ -11,6 +11,7 @@ class Email:
     to: str
     subject: str
     text: str
+    reply_to: str | None = None
 
 
 outbox: list[Email] = []

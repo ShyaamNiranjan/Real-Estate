@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     r2_bucket: str | None = None
     media_public_base_url: str | None = None
 
+    consent_version: str = "2026-10-draft"
+    turnstile_secret: str | None = None
+
     @property
     def google_redirect_uri(self) -> str:
         return f"{self.api_url}/api/v1/auth/google/callback"

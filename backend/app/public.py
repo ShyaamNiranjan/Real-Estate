@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.content import Contact, Image, ListingCard, ListingContent, SiteContent
 from app.db import public_session
+from app.enquiries import form_token
 from app.errors import ApiError, ErrorResponse
 from app.usernames import normalize
 
@@ -47,6 +48,7 @@ class SitePage(BaseModel):
     featured: list[ListingCard]
     listing_count: int
     last_modified: datetime | None
+    form_token: str | None
 
 
 class ListingPage(BaseModel):
@@ -59,6 +61,7 @@ class ListingPage(BaseModel):
     other_homes: list[ListingCard]
     published_at: datetime | None
     last_modified: datetime | None
+    form_token: str
 
 
 class ListingLookup(BaseModel):
@@ -159,7 +162,7 @@ def site(username: str, response: Response) -> SitePage:
                                 booking_url=profile.booking_url) if profile else Contact(),
             )
             return SitePage(username=ws.username, state="holding", noindex=True, site=None, holding=holding,
-                            featured=[], listing_count=0, last_modified=None)
+                            featured=[], listing_count=0, last_modified=None, form_token=None)
         content = SiteContent.model_validate(ws.site_live)
         listings = _listings(s, ws)
         by_id = {r.id: r for r in listings if r.status == "published"}
@@ -167,7 +170,7 @@ def site(username: str, response: Response) -> SitePage:
         stamps = [ws.site_live_at, *(r.live_at for r in listings)]
         return SitePage(username=ws.username, state="live", noindex=False, site=content, holding=None,
                         featured=featured, listing_count=len(listings),
-                        last_modified=max(t for t in stamps if t is not None))
+                        last_modified=max(t for t in stamps if t is not None), form_token=form_token(ws.id))
 
 
 @router.get("/sites/{username}/listings", response_model=list[ListingCard])
@@ -230,7 +233,7 @@ def listing(username: str, slug: str, response: Response) -> ListingLookup:
         return ListingLookup(page=ListingPage(
             username=ws.username, path=f"/{ws.username}/{row.live_slug}", status=row.status, site_live=site_live,
             content=content, contact=contact, other_homes=others, published_at=row.published_at,
-            last_modified=row.live_at,
+            last_modified=row.live_at, form_token=form_token(ws.id),
         ))
 
 

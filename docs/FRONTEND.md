@@ -57,3 +57,10 @@ Emails (sign-up codes) print in that terminal. API docs: http://localhost:8000/d
   - Sitemaps: `/sitemaps` (realtors with anything public, `last_modified`) and `/sitemaps/{username}` (`path`, `last_modified`). Build `sitemap.xml` / `robots.txt` from these.
   - Hero image fallback when `content.hero.image` is null: a gallery photo, else the walkthrough's last frame. Cards already include an `image` chosen this way.
   - `canonical` = `https://scrollwalk.com` + `path`; use `last_modified` for structured data and sitemaps.
+- Enquiry form (listing pages and the site's Contact page):
+  - `POST /api/v1/public/enquiries {username, listing_slug (omit on the Contact page), name, email, phone?, message?, consent: true, form_token, website: "", turnstile_token?}` → always `202 {status: "sent"}` once validation passes.
+  - `form_token` comes from the page response (`page.form_token` / `site.form_token`); put it in a hidden input. Also render a visually hidden `website` input (off-screen, `tabindex="-1"`, `autocomplete="off"`, `aria-hidden`) and send whatever it contains; people leave it empty.
+  - Consent line under the form: "By sending this, you agree to be contacted by {page.content.agent.name} about this property." (Contact page: "…contacted by {site.display_name}."). The checkbox sends `consent: true`.
+  - Turnstile: when the site key is configured (later), render the widget and send its token; `422 verification_failed` means show the check again. `429` = too many messages, try later.
+- Studio inbox (`enquiries.view_own` / `view_all`): `GET /api/v1/enquiries?status=&listing_id=&q=&before=` → `{items, next_before, counts}` (50 per page; pass `next_before` as `before`), `GET /api/v1/enquiries/{id}`, `PATCH /api/v1/enquiries/{id} {status: new|contacted|closed}`, `GET /api/v1/enquiries/export` (CSV download, needs `enquiries.export`). Agents only ever receive their own listings' enquiries; the API and database filter it.
+- Site publish: trial workspaces get the `trial_no_site` blocker (trials are listings only).

@@ -29,7 +29,7 @@ get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
-    "processing_jobs", "media", "listing_slug_history", "listing_sections", "listing_hero", "walkthrough_beats",
+    "enquiries", "processing_jobs", "media", "listing_slug_history", "listing_sections", "listing_hero", "walkthrough_beats",
     "compliance_acknowledgements", "listings", "waitlist",
     "role_permissions", "roles", "workspace_profiles", "username_holds",
     "sessions", "email_codes", "rate_limits", "legal_acceptances",

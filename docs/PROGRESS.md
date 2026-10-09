@@ -9,6 +9,18 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 7: enquiries
+- Done:
+  - Migration `0007_enquiries`. The database decides who can read an enquiry: the listing's agent (with "see own listings' enquiries"), members with "see the whole team's enquiries", and the Admin. Anyone else, including a request with no signed-in user, sees nothing; the API can't delete enquiries.
+  - Public form `POST /api/v1/public/enquiries` for listing pages and the site's Contact page. Only live pages accept enquiries. Consent line stored with its version.
+  - Bot protection: hidden trap field, signed form token that must be 3 seconds to 24 hours old, rate limits (5 per 10 minutes and 20 per day per IP, 200 per day per workspace), Cloudflare Turnstile when `TURNSTILE_SECRET` is set. Bots get the same "sent" answer.
+  - Email alert to the listing's agent and everyone who sees all enquiries, with reply-to set to the buyer.
+  - Studio inbox: newest first with paging, filter by status and listing, search, status (new, contacted, closed), CSV export (needs the export permission; formula injection neutralised). Read-only when the account is offline.
+  - Trial workspaces can't publish a website (scope: trials are listings only).
+  - 146 tests passing.
+- Deployment note: the API rate-limits by the connecting address. Behind Vercel/Cloudflare, run uvicorn with `--proxy-headers --forwarded-allow-ips` set to the proxy's addresses, or every visitor shares one limit.
+- Next: slice 8, analytics.
+
 ## Oct 10, 2026 — frontend steps 1–3 (Claude, commit da15581)
 - Next.js app in `web/`: landing + waitlist (real endpoint), sign up, code entry, sign in, forgot/reset, Google button, Studio placeholder with change email and sign out. Build, typecheck, lint, API-drift check pass.
 - Backend fixes from its report: `POST /api/v1/auth/email/resend` (fresh code for a pending email change, no password needed); validation `fields` messages are now plain English.

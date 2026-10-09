@@ -216,7 +216,9 @@ def site_state(row) -> str:
 
 def site_blockers(row) -> list[Blocker]:
     found = blockers(row)
-    if row.subscription_state not in PUBLISH_STATES:
+    if row.subscription_state == "trialing":
+        found.insert(0, Blocker(code="trial_no_site", message="Your trial covers listings. Subscribe to publish your website."))
+    elif row.subscription_state not in PUBLISH_STATES:
         found.insert(0, Blocker(code="plan", message="Choose a plan to publish."))
     return found
 
