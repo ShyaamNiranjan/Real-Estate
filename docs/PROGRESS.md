@@ -9,6 +9,18 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 6: public pages
+- Done:
+  - Migration `0006_public_site`: site snapshot (`site_live`), About page text (tagline, bio), featured homes (up to 8).
+  - Site publishing: publish / unpublish, blockers (plan, username, name, contact, country fields), the same one-time compliance notice as listings, unpublished-changes flag. Site and listings publish independently.
+  - Listing snapshots are now self-contained: agent name and licence, contact options, brand and compliance fields with labels, so a listing renders even while the site is offline.
+  - Public API (`/api/v1/public`, read-only database role, no sign-in): site home (or the noindex holding page), Properties with filters, listing page, 301 data for renamed listings, sold pages with other homes, 503 for expired trial listings and offline accounts, sitemaps.
+  - Every public response is rebuilt through fixed models (`app/content.py`), so only listed fields can reach a public page; tests check private notes and internal ids never appear and that the public database role can't read drafts or private columns.
+  - Owner-only draft preview with signed media links.
+  - 132 tests passing.
+- Not yet: IndexNow pings on publish (needs the key; with the SEO pass), seller report page (with analytics).
+- Next: slice 7, enquiries (public form with bot protection and rate limits, routing to the listing agent and team, email alerts, Studio inbox and export).
+
 ## Oct 10, 2026 — slice 5: media
 - Done:
   - Migration `0005_media`: media, processing_jobs (forced row-level security; the API can't hard-delete either); media, frame sets and the hero image are tied to their listing's workspace by composite foreign keys.

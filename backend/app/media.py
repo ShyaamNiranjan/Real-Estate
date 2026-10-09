@@ -228,46 +228,54 @@ def walkthrough_state(s: Session, listing_id: UUID) -> str:
     return "missing"
 
 
-def publish_media(s: Session, listing_id: UUID) -> dict:
-    """Copies the listing's ready media to public storage (once per file; media is immutable) and
-    returns the public description used in the live snapshot."""
+def listing_media(s: Session, listing_id: UUID, public: bool) -> dict:
+    """The listing's ready media as used in a snapshot. `public=True` (Publish) copies files to
+    public storage (once per file; media is immutable) and uses permanent public URLs;
+    `public=False` (owner's draft preview) uses short-lived signed URLs and copies nothing."""
     storage = get_storage()
     rows = s.execute(
         text("""SELECT * FROM media WHERE listing_id = :l AND deleted_at IS NULL AND status = 'ready'
                 AND kind IN ('gallery', 'floor_plan', 'hero', 'frames') ORDER BY kind, sort_order, created_at"""),
         {"l": listing_id},
     ).all()
-    copies: list[tuple[str, str]] = []
-    for row in rows:
-        if row.public_key:
-            continue
-        if row.kind == "frames":
-            count = row.variants["count"]
-            copies += [(frame_key(row.key, size, n), private_to_public(frame_key(row.key, size, n)))
-                       for size in ("large", "small") for n in range(1, count + 1)]
-            public = private_to_public(row.key)
-        else:
-            copies += [(k, private_to_public(k)) for k in row.variants["all"]]
-            public = private_to_public(row.variants["large"])
-        s.execute(text("UPDATE media SET public_key = :p WHERE id = :id"), {"p": public, "id": row.id})
-    with ThreadPoolExecutor(max_workers=16) as pool:
-        list(pool.map(lambda pair: storage.copy(*pair), copies))
+    if public:
+        copies: list[tuple[str, str]] = []
+        for row in rows:
+            if row.public_key:
+                continue
+            if row.kind == "frames":
+                count = row.variants["count"]
+                copies += [(frame_key(row.key, size, n), private_to_public(frame_key(row.key, size, n)))
+                           for size in ("large", "small") for n in range(1, count + 1)]
+                key = private_to_public(row.key)
+            else:
+                copies += [(k, private_to_public(k)) for k in row.variants["all"]]
+                key = private_to_public(row.variants["large"])
+            s.execute(text("UPDATE media SET public_key = :p WHERE id = :id"), {"p": key, "id": row.id})
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            list(pool.map(lambda pair: storage.copy(*pair), copies))
+
+    def url(key: str) -> str:
+        return storage.public_url(private_to_public(key)) if public else storage.signed_url(key)
 
     def image(row: Row) -> dict:
         v = row.variants
-        return {"id": str(row.id), "url": storage.public_url(private_to_public(v["large"])),
-                "thumb_url": storage.public_url(private_to_public(v["thumb"])),
+        return {"id": str(row.id), "url": url(v["large"]), "thumb_url": url(v["thumb"]),
                 "width": row.width, "height": row.height, "label": row.label, "alt": row.alt}
 
     walkthrough = {}
     for row in rows:
-        if row.kind == "frames":
-            prefix = storage.public_url(private_to_public(row.key))
-            walkthrough[row.aspect] = {
-                "count": row.variants["count"],
-                "large": {"pattern": f"{prefix}/large/{{n}}.webp", **row.variants["large"]},
-                "small": {"pattern": f"{prefix}/small/{{n}}.webp", **row.variants["small"]},
-            }
+        if row.kind != "frames":
+            continue
+        count = row.variants["count"]
+        sets = {}
+        for size in ("large", "small"):
+            if public:
+                frames = {"pattern": f"{storage.public_url(private_to_public(row.key))}/{size}/{{n}}.webp"}
+            else:
+                frames = {"urls": [url(frame_key(row.key, size, n)) for n in range(1, count + 1)]}
+            sets[size] = {**frames, **row.variants[size]}
+        walkthrough[row.aspect] = {"count": count, **sets}
     return {
         "gallery": [image(r) for r in rows if r.kind == "gallery"],
         "floor_plans": [image(r) for r in rows if r.kind == "floor_plan"],

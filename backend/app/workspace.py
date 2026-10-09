@@ -18,6 +18,7 @@ from app.db import tenant_session
 from app.deps import Auth, in_workspace
 from app.errors import ApiError, ErrorResponse
 from app.permissions import Access, load_access
+from app.plans import PUBLISH_STATES
 from app.ratelimit import Rule, enforce
 
 router = APIRouter(
@@ -69,6 +70,9 @@ class ProfileOut(BaseModel):
     booking_url: str | None
     style_preset: str
     compliance: dict[str, str]
+    tagline: str
+    bio: str
+    featured_listing_ids: list[UUID]
 
 
 class Blocker(BaseModel):
@@ -90,6 +94,9 @@ class WorkspaceOut(BaseModel):
     area_unit: str
     timezone: str
     site_published_at: str | None
+    site_state: Literal["draft", "live", "offline"]
+    site_has_unpublished_changes: bool
+    site_blockers: list[Blocker]
     profile: ProfileOut
     setup: dict[str, Literal["done", "skipped"]]
     publish_blockers: list[Blocker]
@@ -110,6 +117,16 @@ class ProfilePatch(BaseModel):
     whatsapp: Phone = None
     booking_url: Annotated[HttpUrl | None, AfterValidator(_https)] | Literal[""] = None
     style_preset: Literal["noir", "coastal", "terracotta", "evergreen"] | None = None
+    tagline: str | None = Field(default=None, max_length=160)
+    bio: str | None = Field(default=None, max_length=4000)
+
+
+class FeaturedIn(BaseModel):
+    listing_ids: list[UUID] = Field(max_length=8)
+
+
+class SitePublishIn(BaseModel):
+    acknowledge_compliance: bool = False
 
 
 class UsernameCheck(BaseModel):
@@ -139,6 +156,7 @@ class ComplianceProfiles(BaseModel):
 BRAND_FIELDS = {"display_name", "brokerage_name", "country_code", "currency_default", "area_unit",
                 "timezone", "compliance", "style_preset"}
 CONTACT_FIELDS = {"contact_email", "contact_phone", "whatsapp", "booking_url"}
+PAGE_FIELDS = {"tagline", "bio"}
 
 
 def _ensure_profile(s: Session, workspace_id: UUID) -> None:
@@ -150,6 +168,29 @@ def _compliance_values(row) -> dict[str, str]:
     values = dict(row.compliance or {})
     values["brokerage_name"] = row.brokerage_name
     return values
+
+
+def compliance_items(row) -> list[dict]:
+    """The workspace's filled-in compliance fields with their labels, as shown in public footers."""
+    values = _compliance_values(row)
+    return [{"key": f.key, "label": f.label, "value": values[f.key]}
+            for f in compliance.workspace_fields(row.compliance_profile) if str(values.get(f.key, "")).strip()]
+
+
+def contact_of(row) -> dict:
+    return {"email": row.contact_email, "phone": row.contact_phone, "whatsapp": row.whatsapp,
+            "booking_url": row.booking_url}
+
+
+def require_compliance_ack(s: Session, workspace_id: UUID, user_id: UUID, acknowledge: bool) -> None:
+    """The first publish of anything (site or listing) needs the compliance notice ticked once."""
+    if s.execute(text("SELECT 1 FROM compliance_acknowledgements WHERE workspace_id = :w"), {"w": workspace_id}).first():
+        return
+    if not acknowledge:
+        raise ApiError(409, "compliance_ack_required",
+                       "Confirm you're responsible for your site and listings meeting your local rules.")
+    s.execute(text("INSERT INTO compliance_acknowledgements (workspace_id, user_id) VALUES (:w, :u)"),
+              {"w": workspace_id, "u": user_id})
 
 
 def blockers(row) -> list[Blocker]:
@@ -167,11 +208,34 @@ def blockers(row) -> list[Blocker]:
     return found
 
 
+def site_state(row) -> str:
+    if row.subscription_state == "offline":
+        return "offline"
+    return "live" if row.site_live is not None else "draft"
+
+
+def site_blockers(row) -> list[Blocker]:
+    found = blockers(row)
+    if row.subscription_state not in PUBLISH_STATES:
+        found.insert(0, Blocker(code="plan", message="Choose a plan to publish."))
+    return found
+
+
+def site_snapshot(row) -> dict:
+    return {
+        "display_name": row.display_name, "brokerage_name": row.brokerage_name, "tagline": row.tagline,
+        "bio": row.bio, "photo_url": row.photo_url, "style_preset": row.style_preset,
+        "country_code": row.country_code, "contact": contact_of(row), "compliance": compliance_items(row),
+        "featured_listing_ids": [str(i) for i in row.featured_listing_ids or []],
+    }
+
+
 def workspace_row(s: Session, workspace_id: UUID):
     _ensure_profile(s, workspace_id)
     return s.execute(
         text("""SELECT w.*, p.brokerage_name, p.photo_url, p.contact_email, p.contact_phone, p.whatsapp,
-                       p.booking_url, p.style_preset, p.compliance, p.setup
+                       p.booking_url, p.style_preset, p.compliance, p.setup, p.tagline, p.bio,
+                       p.featured_listing_ids, p.updated_at AS profile_updated_at
                 FROM workspaces w JOIN workspace_profiles p ON p.workspace_id = w.id
                 WHERE w.id = :w"""),
         {"w": workspace_id},
@@ -187,10 +251,14 @@ def load_workspace(s: Session, access: Access) -> WorkspaceOut:
         country_code=row.country_code, compliance_profile=row.compliance_profile,
         currency_default=row.currency_default, area_unit=row.area_unit, timezone=row.timezone,
         site_published_at=row.site_published_at.isoformat() if row.site_published_at else None,
+        site_state=site_state(row),
+        site_has_unpublished_changes=bool(row.site_live_at and row.profile_updated_at > row.site_live_at),
+        site_blockers=site_blockers(row),
         profile=ProfileOut(
             brokerage_name=row.brokerage_name, photo_url=row.photo_url, contact_email=row.contact_email,
             contact_phone=row.contact_phone, whatsapp=row.whatsapp, booking_url=row.booking_url,
-            style_preset=row.style_preset, compliance=row.compliance or {},
+            style_preset=row.style_preset, compliance=row.compliance or {}, tagline=row.tagline, bio=row.bio,
+            featured_listing_ids=list(row.featured_listing_ids or []),
         ),
         setup=row.setup or {},
         publish_blockers=blockers(row),
@@ -217,6 +285,8 @@ def update_profile(body: ProfilePatch, auth: Auth = Depends(in_workspace)) -> Wo
             access.require("site.edit_brand")
         if changes.keys() & CONTACT_FIELDS:
             access.require("site.edit_contact")
+        if changes.keys() & PAGE_FIELDS:
+            access.require("site.edit_pages")
         _ensure_profile(s, auth.workspace_id)
         current = s.execute(
             text("SELECT w.compliance_profile, p.compliance FROM workspaces w "
@@ -255,10 +325,11 @@ def update_profile(body: ProfilePatch, auth: Auth = Depends(in_workspace)) -> Wo
                     raise ApiError(422, "unknown_compliance_field", f"'{key}' isn't a field for this country.")
                 merged[key] = value.strip()
             prof["compliance"] = merged
-        for key in ("brokerage_name", "contact_email", "contact_phone", "whatsapp", "booking_url"):
+        for key in ("brokerage_name", "contact_email", "contact_phone", "whatsapp", "booking_url", "tagline", "bio"):
             if key in changes:
                 value = changes[key]
-                prof[key] = (value or "").strip() if key == "brokerage_name" else (str(value).strip() if value else None)
+                plain = key in ("brokerage_name", "tagline", "bio")
+                prof[key] = (value or "").strip() if plain else (str(value).strip() if value else None)
         if changes.get("style_preset"):
             prof["style_preset"] = changes["style_preset"]
         if prof:
@@ -271,6 +342,9 @@ def update_profile(body: ProfilePatch, auth: Auth = Depends(in_workspace)) -> Wo
                 text(f"UPDATE workspace_profiles SET {', '.join(assignments)}, updated_at = now() WHERE workspace_id = :w"),
                 {**params, "w": auth.workspace_id},
             )
+        elif ws:
+            s.execute(text("UPDATE workspace_profiles SET updated_at = now() WHERE workspace_id = :w"),
+                      {"w": auth.workspace_id})
         return load_workspace(s, access)
 
 
@@ -321,6 +395,51 @@ def record_setup_step(body: SetupStep, auth: Auth = Depends(in_workspace)) -> Wo
                  "WHERE workspace_id = :w"),
             {"k": body.step, "v": body.status, "w": auth.workspace_id},
         )
+        return load_workspace(s, access)
+
+
+@router.put("/site/featured", response_model=WorkspaceOut)
+def set_featured(body: FeaturedIn, auth: Auth = Depends(in_workspace)) -> WorkspaceOut:
+    """Homes shown on the site's home page (up to 8, in order). Goes live with the next site Publish."""
+    if len(set(body.listing_ids)) != len(body.listing_ids):
+        raise ApiError(422, "duplicate_listing", "Each home can be featured once.")
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        access = load_access(s, auth.user_id, auth.workspace_id)
+        access.require("site.edit_pages")
+        found = s.execute(text("SELECT count(*) FROM listings WHERE id = ANY(:ids) AND deleted_at IS NULL"),
+                          {"ids": body.listing_ids}).scalar_one()
+        if found != len(body.listing_ids):
+            raise ApiError(422, "invalid_listing", "One of those listings doesn't exist.")
+        _ensure_profile(s, auth.workspace_id)
+        s.execute(text("UPDATE workspace_profiles SET featured_listing_ids = :ids, updated_at = now() WHERE workspace_id = :w"),
+                  {"ids": body.listing_ids, "w": auth.workspace_id})
+        return load_workspace(s, access)
+
+
+@router.post("/site/publish", response_model=WorkspaceOut)
+def publish_site(body: SitePublishIn, auth: Auth = Depends(in_workspace)) -> WorkspaceOut:
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        access = load_access(s, auth.user_id, auth.workspace_id)
+        access.require("site.publish")
+        row = workspace_row(s, auth.workspace_id)
+        if (found := site_blockers(row)):
+            raise ApiError(409, "publish_blocked", found[0].message)
+        require_compliance_ack(s, auth.workspace_id, auth.user_id, body.acknowledge_compliance)
+        s.execute(
+            text("""UPDATE workspaces SET site_live = CAST(:live AS jsonb), site_live_at = now(),
+                           site_published_at = coalesce(site_published_at, now()) WHERE id = :w"""),
+            {"live": json.dumps(site_snapshot(row)), "w": auth.workspace_id},
+        )
+        return load_workspace(s, access)
+
+
+@router.post("/site/unpublish", response_model=WorkspaceOut)
+def unpublish_site(auth: Auth = Depends(in_workspace)) -> WorkspaceOut:
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        access = load_access(s, auth.user_id, auth.workspace_id)
+        access.require("site.publish")
+        s.execute(text("UPDATE workspaces SET site_live = NULL, site_live_at = NULL WHERE id = :w"),
+                  {"w": auth.workspace_id})
         return load_workspace(s, access)
 
 

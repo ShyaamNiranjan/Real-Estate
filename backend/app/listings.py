@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app import compliance, sections
 from app.config import get_settings
+from app.content import ListingContent
 from app.db import tenant_session
 from app.deps import Auth, in_workspace
 from app.errors import ApiError, ErrorResponse
@@ -30,7 +31,14 @@ from app.plans import (
     TRIAL_LISTINGS_DEFAULT,
     TRIAL_LIVE_DAYS,
 )
-from app.workspace import Blocker, blockers as workspace_blockers, workspace_row
+from app.workspace import (
+    Blocker,
+    blockers as workspace_blockers,
+    compliance_items,
+    contact_of,
+    require_compliance_ack,
+    workspace_row,
+)
 
 router = APIRouter(
     prefix="/api/v1/listings",
@@ -177,6 +185,13 @@ class HeroIn(BaseModel):
 
 class PublishIn(BaseModel):
     acknowledge_compliance: bool = False
+
+
+class ListingPreview(BaseModel):
+    id: UUID
+    status: str
+    noindex: Literal[True] = True
+    content: ListingContent
 
 
 # ---------- helpers ----------
@@ -368,23 +383,35 @@ def _editable(s: Session, auth: Auth, listing_id: UUID) -> tuple[Access, Row, Ro
     return access, ws, listing
 
 
-def _snapshot(s: Session, listing: Row) -> dict:
-    from app.media import publish_media
+def _snapshot(s: Session, listing: Row, ws: Row, public: bool = True) -> dict:
+    """The listing as the public sees it. Self-contained (agent, contact, brand) so it renders even
+    while the realtor site is offline."""
+    from app.media import listing_media
 
     hero = _hero(s, listing.id)
-    media = publish_media(s, listing.id)
+    media = listing_media(s, listing.id, public)
     hero_image = media.pop("hero_images").get(str(hero.image_media_id)) if hero.image_media_id else None
+    licence = ""
+    if listing.agent_member_id:
+        licence = s.execute(text("SELECT licence_number FROM memberships WHERE id = :m"),
+                            {"m": listing.agent_member_id}).scalar_one_or_none() or ""
+    values = listing.compliance or {}
     return {
         "title": listing.title, "subtitle": listing.subtitle, "location": listing.location,
         "price_amount": _float(listing.price_amount), "price_currency": listing.price_currency,
         "price_label": listing.price_label, "bedrooms": listing.bedrooms, "bathrooms": _float(listing.bathrooms),
         "area": _float(listing.area), "area_unit": listing.area_unit, "property_type": listing.property_type,
         "experience_type": listing.experience_type, "mobile_mode": listing.mobile_mode,
-        "compliance": listing.compliance or {}, "seo_title": listing.seo_title,
-        "seo_description": listing.seo_description, "agent_member_id": str(listing.agent_member_id or ""),
+        "compliance": [{"key": f.key, "label": f.label, "value": str(values[f.key]).strip()}
+                       for f in _listing_fields(ws.compliance_profile) if str(values.get(f.key, "")).strip()],
+        "seo_title": listing.seo_title, "seo_description": listing.seo_description,
         "sections": [sec.model_dump(mode="json", exclude={"is_visible"}) for sec in _sections(s, listing, visible_only=True)],
-        "hero": {**hero.model_dump(mode="json"), "image": hero_image},
+        "hero": {**hero.model_dump(mode="json", exclude={"image_media_id"}), "image": hero_image},
         "beats": [b.model_dump() for b in _beats(s, listing.id)],
+        "agent": {"name": listing.agent_name or ws.display_name, "licence_number": licence.strip()},
+        "contact": contact_of(ws),
+        "brand": {"display_name": ws.display_name, "brokerage_name": ws.brokerage_name,
+                  "style_preset": ws.style_preset, "compliance": compliance_items(ws)},
         **media,
     }
 
@@ -392,14 +419,7 @@ def _snapshot(s: Session, listing: Row) -> dict:
 def _go_live(s: Session, listing: Row, ws: Row, access: Access, acknowledge: bool) -> None:
     if (found := listing_blockers(s, listing, ws)):
         raise ApiError(409, "publish_blocked", found[0].message)
-    acknowledged = s.execute(text("SELECT 1 FROM compliance_acknowledgements WHERE workspace_id = :w"),
-                             {"w": ws.id}).first()
-    if not acknowledged:
-        if not acknowledge:
-            raise ApiError(409, "compliance_ack_required",
-                           "Confirm you're responsible for this listing meeting your local rules.")
-        s.execute(text("INSERT INTO compliance_acknowledgements (workspace_id, user_id) VALUES (:w, :u)"),
-                  {"w": ws.id, "u": access.user_id})
+    require_compliance_ack(s, ws.id, access.user_id, acknowledge)
     if listing.live_slug and listing.live_slug != listing.slug:
         s.execute(text("""INSERT INTO listing_slug_history (workspace_id, slug, listing_id) VALUES (:w, :s, :l)
                           ON CONFLICT (workspace_id, slug) DO NOTHING"""),
@@ -414,7 +434,7 @@ def _go_live(s: Session, listing: Row, ws: Row, access: Access, acknowledge: boo
                        published_at = coalesce(published_at, :stamp),
                        trial_expires_at = coalesce(trial_expires_at, :trial)
                 WHERE id = :id"""),
-        {"live": json.dumps(_snapshot(s, listing)), "trial": trial_expiry, "stamp": stamp, "id": listing.id},
+        {"live": json.dumps(_snapshot(s, listing, ws)), "trial": trial_expiry, "stamp": stamp, "id": listing.id},
     )
 
 
@@ -502,6 +522,17 @@ def create_listing(body: ListingCreate, auth: Auth = Depends(in_workspace)) -> L
 def get_listing(listing_id: UUID, auth: Auth = Depends(in_workspace)) -> ListingOut:
     with tenant_session(auth.user_id, auth.workspace_id) as s:
         return build(s, listing_id, load_access(s, auth.user_id, auth.workspace_id))
+
+
+@router.get("/{listing_id}/preview", response_model=ListingPreview)
+def preview_listing(listing_id: UUID, auth: Auth = Depends(in_workspace)) -> ListingPreview:
+    """The current draft exactly as it would publish, for the owner only (signed media URLs, noindex)."""
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        load_access(s, auth.user_id, auth.workspace_id)
+        listing = _load(s, listing_id)
+        ws = workspace_row(s, auth.workspace_id)
+        return ListingPreview(id=listing.id, status=listing.status,
+                              content=ListingContent.model_validate(_snapshot(s, listing, ws, public=False)))
 
 
 @router.patch("/{listing_id}", response_model=ListingOut)
