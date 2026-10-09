@@ -172,6 +172,7 @@ class HeroIn(BaseModel):
     enabled: bool
     show_facts: bool
     show_price: bool
+    image_media_id: UUID | None = Field(default=None, description="Omit to keep the current image; null clears it.")
 
 
 class PublishIn(BaseModel):
@@ -291,12 +292,21 @@ def _listing_fields(profile: str | None) -> list[compliance.Field]:
     return [f for f in compliance.PROFILES[profile].fields if f.scope == "listing"]
 
 
-def listing_blockers(listing: Row, ws: Row) -> list[Blocker]:
+def listing_blockers(s: Session, listing: Row, ws: Row) -> list[Blocker]:
+    from app.media import walkthrough_state
+
     found = [Blocker(code=f"workspace.{b.code}", message=b.message) for b in workspace_blockers(ws)]
     if ws.subscription_state not in PUBLISH_STATES:
         found.insert(0, Blocker(code="plan", message="Choose a plan to publish."))
     if not listing.title.strip():
         found.append(Blocker(code="title", message="Give this listing a title."))
+    if listing.experience_type == "immersive":
+        state = walkthrough_state(s, listing.id)
+        if state == "processing":
+            found.append(Blocker(code="walkthrough_processing", message="Your walkthrough is still being prepared."))
+        elif state == "missing":
+            found.append(Blocker(code="walkthrough",
+                                 message="Upload a walkthrough video, or switch this to a photo listing."))
     values = listing.compliance or {}
     for field in _listing_fields(ws.compliance_profile):
         if field.required and not str(values.get(field.key, "")).strip():
@@ -334,7 +344,7 @@ def build(s: Session, listing_id: UUID, access: Access) -> ListingOut:
         preview_path=f"/preview/{listing.id}",
         sections=_sections(s, listing), hero=_hero(s, listing.id), beats=_beats(s, listing.id),
         permissions=_permissions(listing, access),
-        publish_blockers=listing_blockers(listing, ws),
+        publish_blockers=listing_blockers(s, listing, ws),
     )
 
 
@@ -359,7 +369,11 @@ def _editable(s: Session, auth: Auth, listing_id: UUID) -> tuple[Access, Row, Ro
 
 
 def _snapshot(s: Session, listing: Row) -> dict:
+    from app.media import publish_media
+
     hero = _hero(s, listing.id)
+    media = publish_media(s, listing.id)
+    hero_image = media.pop("hero_images").get(str(hero.image_media_id)) if hero.image_media_id else None
     return {
         "title": listing.title, "subtitle": listing.subtitle, "location": listing.location,
         "price_amount": _float(listing.price_amount), "price_currency": listing.price_currency,
@@ -369,13 +383,14 @@ def _snapshot(s: Session, listing: Row) -> dict:
         "compliance": listing.compliance or {}, "seo_title": listing.seo_title,
         "seo_description": listing.seo_description, "agent_member_id": str(listing.agent_member_id or ""),
         "sections": [sec.model_dump(mode="json", exclude={"is_visible"}) for sec in _sections(s, listing, visible_only=True)],
-        "hero": hero.model_dump(mode="json"),
+        "hero": {**hero.model_dump(mode="json"), "image": hero_image},
         "beats": [b.model_dump() for b in _beats(s, listing.id)],
+        **media,
     }
 
 
 def _go_live(s: Session, listing: Row, ws: Row, access: Access, acknowledge: bool) -> None:
-    if (found := listing_blockers(listing, ws)):
+    if (found := listing_blockers(s, listing, ws)):
         raise ApiError(409, "publish_blocked", found[0].message)
     acknowledged = s.execute(text("SELECT 1 FROM compliance_acknowledgements WHERE workspace_id = :w"),
                              {"w": ws.id}).first()
@@ -644,6 +659,17 @@ def update_hero(listing_id: UUID, body: HeroIn, auth: Auth = Depends(in_workspac
                     ON CONFLICT (listing_id) DO UPDATE SET enabled = :e, show_facts = :f, show_price = :p"""),
             {"l": listing_id, "w": auth.workspace_id, "e": body.enabled, "f": body.show_facts, "p": body.show_price},
         )
+        if "image_media_id" in body.model_fields_set:
+            if body.image_media_id is not None:
+                ok = s.execute(
+                    text("""SELECT 1 FROM media WHERE id = :m AND listing_id = :l AND kind IN ('hero', 'gallery')
+                            AND status = 'ready' AND deleted_at IS NULL"""),
+                    {"m": body.image_media_id, "l": listing_id},
+                ).first()
+                if not ok:
+                    raise ApiError(422, "invalid_hero_image", "Pick a ready photo from this listing.")
+            s.execute(text("UPDATE listing_hero SET image_media_id = :m WHERE listing_id = :l"),
+                      {"m": body.image_media_id, "l": listing_id})
         _touch(s, listing_id)
         return build(s, listing_id, access)
 
@@ -690,7 +716,7 @@ def submit_for_approval(listing_id: UUID, auth: Auth = Depends(in_workspace)) ->
             raise ApiError(403, "permission_denied", "Your role doesn't allow editing this listing.")
         if listing.status != "draft" and not (listing.live_at and listing.updated_at > listing.live_at):
             raise ApiError(409, "nothing_to_submit", "There are no changes waiting to go live.")
-        if (found := listing_blockers(listing, ws)):
+        if (found := listing_blockers(s, listing, ws)):
             raise ApiError(409, "publish_blocked", found[0].message)
         if listing.status == "draft":
             s.execute(text("UPDATE listings SET status = 'pending_approval' WHERE id = :id"), {"id": listing_id})

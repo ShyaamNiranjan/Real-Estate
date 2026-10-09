@@ -5,6 +5,7 @@ real tenant_session()/public_session() helpers are what gets tested.
 """
 
 import os
+import tempfile
 from argparse import Namespace
 from pathlib import Path
 
@@ -21,11 +22,14 @@ for name in ("migrations_database_url", "database_url", "public_database_url", "
     if not test_url or "scrollwalk_test" not in test_url:
         raise RuntimeError(f"TEST_{name.upper()} must point at scrollwalk_test")
     os.environ[name.upper()] = test_url
+os.environ["STORAGE_BACKEND"] = "local"
+os.environ["LOCAL_MEDIA_DIR"] = tempfile.mkdtemp(prefix="sw-test-media-")
+os.environ["APP_URL"] = "https://testserver"
 get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
-    "listing_slug_history", "listing_sections", "listing_hero", "walkthrough_beats",
+    "processing_jobs", "media", "listing_slug_history", "listing_sections", "listing_hero", "walkthrough_beats",
     "compliance_acknowledgements", "listings", "waitlist",
     "role_permissions", "roles", "workspace_profiles", "username_holds",
     "sessions", "email_codes", "rate_limits", "legal_acceptances",

@@ -27,6 +27,7 @@ def admin(client, owner_engine):
 
 
 def new_listing(c, title="Villa Aurelia", **kw):
+    kw.setdefault("experience_type", "photo")
     r = c.post(L, json={"title": title, **kw}, headers=csrf(c))
     assert r.status_code == 201, r.text
     return r.json()
@@ -69,7 +70,7 @@ def test_slugs_are_unique_and_avoid_section_words(admin):
 
 def test_at_a_glance_follows_the_details(admin):
     c = admin["client"]
-    listing = new_listing(c)
+    listing = new_listing(c, experience_type="immersive")
     listing = edit(c, listing["id"], bedrooms=4, bathrooms=3.5, area=2400, price_amount=2450000).json()
     glance = next(s for s in listing["sections"] if s["type"] == "at_a_glance")
     assert glance["content"]["items"] == [

@@ -5,6 +5,7 @@ LISTING_LIMITS: dict[str, int | None] = {"agent": 15, "team": 50, "brokerage": N
 FREE_PREVIEW_LISTINGS = 1
 TRIAL_LISTINGS_DEFAULT = 3
 TRIAL_LIVE_DAYS = 60
+TRIAL_VIDEO_MAX_BYTES = 500 * 1024 * 1024
 
 # subscription_state values: none (free preview), trialing, active, grace, offline
 PUBLISH_STATES = frozenset({"trialing", "active", "grace"})

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,6 +38,14 @@ class Settings(BaseSettings):
 
     google_client_id: str | None = None
     google_client_secret: str | None = None
+
+    storage_backend: Literal["local", "r2"] = "local"
+    local_media_dir: Path = Path(__file__).resolve().parent.parent / ".data" / "media"
+    r2_account_id: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
+    r2_bucket: str | None = None
+    media_public_base_url: str | None = None
 
     @property
     def google_redirect_uri(self) -> str:

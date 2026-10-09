@@ -9,6 +9,19 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 5: media
+- Done:
+  - Migration `0005_media`: media, processing_jobs (forced row-level security; the API can't hard-delete either); media, frame sets and the hero image are tied to their listing's workspace by composite foreign keys.
+  - Storage layer: Cloudflare R2 (presigned uploads locked to the announced size and type) and a local stand-in served by the API with signed links, used until the R2 keys arrive. Originals and drafts are private; Publish copies to `public/` (cached forever, media never changes in place).
+  - Upload → direct PUT → complete. On complete we check the file that actually arrived (size, type); images are decoded and re-encoded to WebP (2400 px and 640 px), which strips EXIF and GPS and refuses anything that isn't a real image.
+  - Gallery (40), floor plans (10), hero image (a new one replaces the old; or pick a gallery photo), labels, alt text, order, delete (public copies stay so the live page doesn't break).
+  - Video worker `python -m app.worker`: Postgres job queue (several workers can run side by side, stuck jobs retried, 3 attempts), quality check (too short, below 1080p, too dark), wrong-orientation rejection with a clear message, two-pass stabilisation, duplicate-frame removal (pauses), even sampling to 240 frames, WebP sets at 1920 px and 1280 px, email when ready or failed. A new walkthrough replaces the previous one for that orientation.
+  - Immersive listings can't publish until the walkthrough is ready; the live snapshot now carries gallery, floor plans, hero image and frame URL patterns.
+  - Trial video cap 500 MB (placeholder in `plans.py`).
+  - 119 tests passing, including the full ffmpeg pipeline on a generated clip.
+- Not yet: a cleanup sweep for public copies no live page uses any more (with lifecycle work); "shaky footage" warning (stabilisation runs regardless).
+- Next: slice 6, public pages API (realtor site and listing pages from live snapshots, agent name, 503 for expired/offline, 301s for old slugs, preview links for drafts).
+
 ## Oct 10, 2026 — slice 4: listings and waitlist
 - Done:
   - Migration `0004_listings`: listings, listing_sections, listing_hero, walkthrough_beats, listing_slug_history, compliance_acknowledgements, waitlist.
@@ -66,6 +79,7 @@ cd backend
 .\.venv\Scripts\alembic upgrade head          # apply migrations to scrollwalk_dev
 .\.venv\Scripts\python -m pytest              # tests run against scrollwalk_test only
 .\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\python -m app.worker          # video processing (needs ffmpeg on PATH)
 ```
 
 ## Oct 10, 2026
