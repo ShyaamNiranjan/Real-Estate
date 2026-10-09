@@ -115,7 +115,7 @@ Browser ──► Frontend (Studio SPA + server-rendered public pages)
 
 **Locked**
 - **Backend:** FastAPI (Python), SQLAlchemy, Alembic migrations, Pydantic schemas.
-- **Database:** Postgres 16 or 17, provider-agnostic. Development on local Postgres in Docker. Provider chosen by **Oct 18** (EU region preference noted for European customers). Portability rules:
+- **Database:** Postgres 16 or 17, provider-agnostic. Development on the local PostgreSQL 17 server (databases `scrollwalk_dev` and `scrollwalk_test`, created by `scripts/db-bootstrap.ps1`). Provider chosen by **Oct 18** (EU region preference noted for European customers). Portability rules:
   - Sign-in, roles and permissions live in FastAPI, never in provider features (no Supabase Auth, no provider RLS tooling).
   - Files never live in the database provider's storage.
   - Only extensions available everywhere: `pgcrypto`, `citext`, `pg_trgm`.
@@ -128,10 +128,9 @@ Browser ──► Frontend (Studio SPA + server-rendered public pages)
 - **AI:** one OpenAI-compatible client, switchable by settings (base URL, model, key). Production: **GPT-6 Luna**. Development: **Gemini free tier with sample data only**. Switch to Luna and run the full prompt test set by **Oct 19–20**.
 - **Billing:** a merchant of record (Paddle, Lemon Squeezy, Dodo Payments or similar). **Essential**, because we sell globally as an individual and the MoR handles tax in every country and blocks sanctioned countries. Provider chosen during the build days; must accept an individual seller based in India.
 
-**Open — must be decided on day 1 (Oct 10)**
-- **How public pages are server-rendered.** Public realtor sites and listing pages must arrive from the server with title, description, preview image, structured data and main content in the HTML (link previews on WhatsApp, iMessage, Instagram and Facebook read only raw HTML). The Studio can stay a client-side app.
-  - **Recommendation:** Next.js for the frontend (server-rendered public pages, client-rendered Studio), calling FastAPI. The prototype's React components carry over.
-  - Alternative: keep the Vite SPA and have a server inject meta tags per URL. Weaker for SEO content.
+- **Frontend (locked Oct 10): Next.js.** Public realtor sites and listing pages are server-rendered, arriving with title, description, preview image, structured data and main content in the HTML (link previews on WhatsApp, iMessage, Instagram and Facebook read only raw HTML). The Studio and Super-Admin are client-rendered. Next.js only calls FastAPI; it never talks to the database or third-party services. The prototype's React components carry over.
+
+**Open**
 - **Hosting** for the frontend and the FastAPI backend (Vercel for the frontend is the default assumption). Parked for the build days, but staging must exist by Oct 18.
 
 ---
@@ -581,8 +580,8 @@ A separate application area for the founder and staff. Never visible to customer
 
 ## 15. Open items
 
-**Decide on day 1**
-1. Server rendering approach for public pages (recommendation: Next.js frontend).
+**Decided**
+1. Server rendering for public pages: Next.js (Oct 10).
 
 **Decide by Oct 18**
 2. Database provider (any Postgres 16/17; consider EU region).
