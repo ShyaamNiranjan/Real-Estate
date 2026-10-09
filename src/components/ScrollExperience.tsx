@@ -598,6 +598,14 @@ export function ScrollExperience({ sequences, hero, beats, label, mobileMode = '
 
         <div className="scroll-stage__ui">
           <div className="scroll-hero" ref={heroRef}>
+            {bare && !rotate && (
+              <p className="scroll-tagline">
+                <span className="scroll-tagline__text">
+                  <b>Scroll</b> to <b>walk</b> in<i aria-hidden />
+                </span>
+                <span className="scroll-tagline__line" aria-hidden />
+              </p>
+            )}
             {!bare && (
               <>
                 <div className="scroll-hero__copy">

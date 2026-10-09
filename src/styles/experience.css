@@ -713,3 +713,135 @@ html.stage-rotated .preview-bar {
   width: var(--panel-w);
   bottom: 2.25rem;
 }
+
+/* --- Opening line on the first frame when a hero banner owns the title --- */
+
+.scroll-tagline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(2.2rem + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0;
+  pointer-events: none;
+}
+
+.scroll-tagline__text {
+  font-family: var(--font-body);
+  font-size: clamp(0.66rem, 0.5rem + 0.35vw, 0.8rem);
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-transform: uppercase;
+  color: rgba(250, 248, 244, 0.6);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+}
+
+.scroll-tagline__text b {
+  font-weight: 700;
+  color: var(--white);
+}
+
+.scroll-tagline__text i {
+  display: inline-block;
+  width: 0.36em;
+  height: 0.36em;
+  margin-left: 0.12em;
+  border-radius: 50%;
+  background: var(--gold);
+  vertical-align: baseline;
+}
+
+.scroll-tagline__line {
+  position: relative;
+  width: 1px;
+  height: 40px;
+  overflow: hidden;
+  background: rgba(250, 248, 244, 0.18);
+}
+
+.scroll-tagline__line::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 45%;
+  background: var(--gold);
+  animation: taglineDrip 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+html[data-hero='gone'] .scroll-tagline__text {
+  animation: taglineIn 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s backwards;
+}
+
+html[data-hero='gone'] .scroll-tagline__text i {
+  animation: taglineDot 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.95s backwards;
+}
+
+html[data-hero='gone'] .scroll-tagline__line {
+  animation: taglineGrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.6s backwards;
+}
+
+@keyframes taglineIn {
+  from {
+    opacity: 0;
+    letter-spacing: 0.6em;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.32em;
+    filter: none;
+  }
+}
+
+@keyframes taglineDot {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes taglineGrow {
+  from {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  to {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+}
+
+@keyframes taglineDrip {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(230%);
+  }
+}
+
+.scroll-track.is-fit .scroll-tagline {
+  top: calc(var(--band-top, 30%) + var(--band-h, 40%) + 1.8rem);
+  bottom: auto;
+}
+
+.scroll-track.is-side .scroll-tagline {
+  left: calc(var(--pad-x) + var(--safe-left));
+  right: auto;
+  align-items: flex-start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-tagline *,
+  .scroll-tagline *::after {
+    animation: none !important;
+  }
+}

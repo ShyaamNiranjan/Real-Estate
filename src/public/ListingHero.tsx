@@ -163,6 +163,15 @@ export function useHeroCurtain(active: boolean) {
     )
   }, [])
 
+  // Lets the walkthrough's opening line time its entrance to the moment the cut lands.
+  useEffect(() => {
+    if (!active) return
+    document.documentElement.dataset.hero = phase
+    return () => {
+      delete document.documentElement.dataset.hero
+    }
+  }, [active, phase])
+
   useEffect(() => {
     if (!active) return
     const atTop = () => window.scrollY <= 2

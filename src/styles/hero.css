@@ -65,11 +65,12 @@
 
 .lhero.is-leaving .lhero__frame,
 .lhero.is-returning .lhero__frame,
-.lhero--preview.is-gone .lhero__frame {
+.lhero.is-gone .lhero__frame {
   opacity: 1;
 }
 
-.lhero--preview.is-gone .lhero__scene {
+/* Hold the cut's last state while the layer fades, so the banner never ghosts back in */
+.lhero.is-gone .lhero__scene {
   opacity: 0;
 }
 
