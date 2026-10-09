@@ -98,6 +98,30 @@
         "title": "BeatIn",
         "type": "object"
       },
+      "BeatReach": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "number"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reached": {
+            "description": "Share of walkthrough starts that got this far (0\u20131).",
+            "title": "Reached",
+            "type": "number"
+          }
+        },
+        "required": [
+          "at",
+          "label",
+          "reached"
+        ],
+        "title": "BeatReach",
+        "type": "object"
+      },
       "Blocker": {
         "properties": {
           "code": {
@@ -278,6 +302,35 @@
           }
         },
         "title": "Contact",
+        "type": "object"
+      },
+      "DayPoint": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "enquiries": {
+            "title": "Enquiries",
+            "type": "integer"
+          },
+          "views": {
+            "title": "Views",
+            "type": "integer"
+          },
+          "visitors": {
+            "title": "Visitors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "views",
+          "visitors",
+          "enquiries"
+        ],
+        "title": "DayPoint",
         "type": "object"
       },
       "EmailChangeIn": {
@@ -590,6 +643,104 @@
           "error"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EventIn": {
+        "properties": {
+          "event": {
+            "enum": [
+              "pageview",
+              "leave",
+              "walk_depth",
+              "gallery_open",
+              "floor_plan_view",
+              "enquiry_click",
+              "phone_tap",
+              "whatsapp_tap",
+              "booking_click"
+            ],
+            "title": "Event",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "event"
+        ],
+        "title": "EventIn",
+        "type": "object"
+      },
+      "EventsIn": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EventIn"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Events",
+            "type": "array"
+          },
+          "listing_slug": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listing Slug"
+          },
+          "path": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Path",
+            "type": "string"
+          },
+          "referrer": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Referrer",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 60,
+            "title": "Username",
+            "type": "string"
+          },
+          "view_id": {
+            "description": "Random id generated once per page load (not stored in the browser).",
+            "format": "uuid",
+            "title": "View Id",
+            "type": "string"
+          },
+          "webdriver": {
+            "default": false,
+            "description": "navigator.webdriver",
+            "title": "Webdriver",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "username",
+          "view_id",
+          "events"
+        ],
+        "title": "EventsIn",
         "type": "object"
       },
       "FeaturedIn": {
@@ -2019,6 +2170,35 @@
         "title": "ListingPreview",
         "type": "object"
       },
+      "ListingStat": {
+        "properties": {
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "views": {
+            "title": "Views",
+            "type": "integer"
+          },
+          "visitors": {
+            "title": "Visitors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "listing_id",
+          "title",
+          "views",
+          "visitors"
+        ],
+        "title": "ListingStat",
+        "type": "object"
+      },
       "ListingSummary": {
         "properties": {
           "agent": {
@@ -2496,6 +2676,24 @@
         "title": "MediaPatch",
         "type": "object"
       },
+      "Named": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "visitors": {
+            "title": "Visitors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "visitors"
+        ],
+        "title": "Named",
+        "type": "object"
+      },
       "PermissionInfo": {
         "properties": {
           "description": {
@@ -2880,6 +3078,58 @@
         "title": "PublishIn",
         "type": "object"
       },
+      "ReportCreate": {
+        "properties": {
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "listing_id"
+        ],
+        "title": "ReportCreate",
+        "type": "object"
+      },
+      "ReportOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only returned once, when the report is created.",
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "listing_id",
+          "created_at"
+        ],
+        "title": "ReportOut",
+        "type": "object"
+      },
       "ResendIn": {
         "properties": {
           "email": {
@@ -3193,6 +3443,87 @@
         "title": "SectionPatch",
         "type": "object"
       },
+      "SellerReport": {
+        "properties": {
+          "agent_name": {
+            "title": "Agent Name",
+            "type": "string"
+          },
+          "brand": {
+            "additionalProperties": true,
+            "title": "Brand",
+            "type": "object"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "noindex": {
+            "const": true,
+            "default": true,
+            "title": "Noindex",
+            "type": "boolean"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/Summary"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "location",
+          "path",
+          "status",
+          "image",
+          "agent_name",
+          "brand",
+          "published_at",
+          "generated_at",
+          "summary"
+        ],
+        "title": "SellerReport",
+        "type": "object"
+      },
       "Sent": {
         "properties": {
           "status": {
@@ -3492,6 +3823,139 @@
         "title": "SitemapSite",
         "type": "object"
       },
+      "Summary": {
+        "properties": {
+          "cities": {
+            "items": {
+              "$ref": "#/components/schemas/Named"
+            },
+            "title": "Cities",
+            "type": "array"
+          },
+          "clicks": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Clicks",
+            "type": "object"
+          },
+          "countries": {
+            "items": {
+              "$ref": "#/components/schemas/Named"
+            },
+            "title": "Countries",
+            "type": "array"
+          },
+          "devices": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "enum": [
+                "mobile",
+                "tablet",
+                "desktop"
+              ]
+            },
+            "title": "Devices",
+            "type": "object"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "listings": {
+            "items": {
+              "$ref": "#/components/schemas/ListingStat"
+            },
+            "title": "Listings",
+            "type": "array"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/DayPoint"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "sources": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "enum": [
+                "link",
+                "search"
+              ]
+            },
+            "title": "Sources",
+            "type": "object"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/Totals"
+          },
+          "walkthrough": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WalkthroughStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "totals",
+          "series",
+          "sources",
+          "devices",
+          "countries",
+          "cities",
+          "clicks",
+          "walkthrough",
+          "listings"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "Totals": {
+        "properties": {
+          "enquiries": {
+            "title": "Enquiries",
+            "type": "integer"
+          },
+          "enquiry_rate": {
+            "title": "Enquiry Rate",
+            "type": "number"
+          },
+          "views": {
+            "title": "Views",
+            "type": "integer"
+          },
+          "visitors": {
+            "description": "Sum of daily unique visitors (visitors can't be linked across days).",
+            "title": "Visitors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "views",
+          "visitors",
+          "enquiries",
+          "enquiry_rate"
+        ],
+        "title": "Totals",
+        "type": "object"
+      },
       "UploadOut": {
         "properties": {
           "media": {
@@ -3776,6 +4240,55 @@
         "title": "Walkthrough",
         "type": "object"
       },
+      "WalkthroughStats": {
+        "properties": {
+          "average_depth": {
+            "title": "Average Depth",
+            "type": "number"
+          },
+          "completion_rate": {
+            "title": "Completion Rate",
+            "type": "number"
+          },
+          "drop_off": {
+            "items": {
+              "$ref": "#/components/schemas/BeatReach"
+            },
+            "title": "Drop Off",
+            "type": "array"
+          },
+          "starts": {
+            "title": "Starts",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "starts",
+          "average_depth",
+          "completion_rate",
+          "drop_off"
+        ],
+        "title": "WalkthroughStats",
+        "type": "object"
+      },
+      "WeeklyEmail": {
+        "properties": {
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject",
+          "text"
+        ],
+        "title": "WeeklyEmail",
+        "type": "object"
+      },
       "WorkspaceOut": {
         "properties": {
           "area_unit": {
@@ -3953,6 +4466,370 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/analytics/reports": {
+      "get": {
+        "operationId": "list_reports_api_v1_analytics_reports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReportOut"
+                  },
+                  "title": "Response List Reports Api V1 Analytics Reports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "List Reports",
+        "tags": [
+          "analytics"
+        ]
+      },
+      "post": {
+        "operationId": "create_report_api_v1_analytics_reports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Create Report",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/reports/{report_id}": {
+      "delete": {
+        "operationId": "revoke_report_api_v1_analytics_reports__report_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Revoke Report",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/summary": {
+      "get": {
+        "description": "Workspace-wide (with top listings) or one listing (with walkthrough depth and drop-off by caption).",
+        "operationId": "summary_api_v1_analytics_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "title": "Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "listing_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Summary",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/weekly-preview": {
+      "get": {
+        "operationId": "weekly_preview_api_v1_analytics_weekly_preview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyEmail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Weekly Preview",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
     "/api/v1/auth/email/change": {
       "post": {
         "operationId": "change_email_api_v1_auth_email_change_post",
@@ -7407,6 +8284,124 @@
           }
         },
         "summary": "Create Enquiry",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/events": {
+      "post": {
+        "description": "Page beacons. Always answers 204; anything filtered is simply not recorded.",
+        "operationId": "ingest_api_v1_public_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Ingest",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/reports/{token}": {
+      "get": {
+        "description": "The seller report behind an unguessable link: one listing, since it was first published.",
+        "operationId": "open_report_api_v1_public_reports__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Open Report",
         "tags": [
           "public"
         ]

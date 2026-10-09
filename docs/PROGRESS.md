@@ -9,6 +9,17 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 8: analytics
+- Done:
+  - Migration `0008_analytics`: analytics_events, daily salts, seller_reports.
+  - Cookieless ingest `POST /api/v1/public/events`: visitor = hash of a random daily salt (deleted after a day), IP, browser and workspace; no IP or cookie stored. Bots, headless browsers (`navigator.webdriver`) and the realtor's own visits (recognised by their Studio session) are dropped. Source: "Through a link" or "Found on Google" (search engines), internal navigation kept separate. Device from the browser, country and city from Cloudflare/Vercel headers.
+  - Database-enforced visibility: agents see their own listings, "whole team" members and the Admin see everything including site pages; buyers' details stay behind the enquiry permissions (analytics only gets counts).
+  - Summary for 7/30/90 days: views, daily unique visitors, enquiries and rate, sources, devices, countries, cities, clicks, top listings; per listing: walkthrough starts, average depth, completion and drop-off by caption.
+  - Seller reports: unguessable link (stored hashed, shown once), revocable, opens exactly one listing's numbers since publishing.
+  - Weekly summary email (`python -m app.jobs weekly`, needs a scheduler) and a Studio preview.
+  - 155 tests passing.
+- Next: slice 9, team invites and members.
+
 ## Oct 10, 2026 — slice 7: enquiries
 - Done:
   - Migration `0007_enquiries`. The database decides who can read an enquiry: the listing's agent (with "see own listings' enquiries"), members with "see the whole team's enquiries", and the Admin. Anyone else, including a request with no signed-in user, sees nothing; the API can't delete enquiries.
