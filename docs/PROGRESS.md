@@ -9,6 +9,11 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — frontend steps 1–3 (Claude, commit da15581)
+- Next.js app in `web/`: landing + waitlist (real endpoint), sign up, code entry, sign in, forgot/reset, Google button, Studio placeholder with change email and sign out. Build, typecheck, lint, API-drift check pass.
+- Backend fixes from its report: `POST /api/v1/auth/email/resend` (fresh code for a pending email change, no password needed); validation `fields` messages are now plain English.
+- Claude's next task is on hold until the founder says go.
+
 ## Oct 10, 2026 — slice 6: public pages
 - Done:
   - Migration `0006_public_site`: site snapshot (`site_live`), About page text (tagline, bio), featured homes (up to 8).

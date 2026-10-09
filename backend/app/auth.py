@@ -447,6 +447,24 @@ def change_email(body: EmailChangeIn, request: Request, auth: Auth = Depends(sig
     return Accepted()
 
 
+@router.post("/email/resend", status_code=202, response_model=Accepted)
+def resend_email_change(request: Request, auth: Auth = Depends(signed_in)) -> Accepted:
+    """A fresh code for the email change already in progress (the password was checked when it started)."""
+    enforce((CODE_SEND_IP, client_ip(request)), (CODE_SEND_EMAIL, str(auth.user_id)))
+    with tenant_session(auth.user_id) as s:
+        target = s.execute(
+            text("""SELECT target_email FROM email_codes WHERE user_id = :u AND purpose = 'email_change'
+                    AND consumed_at IS NULL AND expires_at > now() ORDER BY created_at DESC LIMIT 1"""),
+            {"u": auth.user_id},
+        ).scalar_one_or_none()
+        if target is None:
+            raise ApiError(409, "nothing_pending", "Start the email change again.")
+        outgoing = issue_code(s, auth.user_id, "email_change", target, target_email=target)
+    if outgoing:
+        mail.send(outgoing)
+    return Accepted()
+
+
 @router.post("/email/confirm", response_model=Me)
 def confirm_email_change(body: CodeIn, request: Request, auth: Auth = Depends(signed_in)) -> Me:
     enforce((CODE_CHECK_IP, client_ip(request)), (CODE_CHECK_EMAIL, str(auth.user_id)))

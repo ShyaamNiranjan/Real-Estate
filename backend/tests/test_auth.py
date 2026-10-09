@@ -236,6 +236,32 @@ def test_change_email(client, make_client):
     assert fresh.post(f"{API}/login", json={"email": "new@example.com", "password": PASSWORD}).status_code == 200
 
 
+def test_validation_messages_are_plain_english(client):
+    r = client.post(f"{API}/signup", json={"email": "not-an-email", "password": "short", "accept_terms": False})
+    assert r.status_code == 422
+    fields = r.json()["error"]["fields"]
+    assert fields == {"email": "Enter a valid email address.", "password": "Use at least 8 characters.",
+                      "accept_terms": "Please tick this box."}
+
+
+def test_resend_email_change_code(client, owner_engine):
+    sign_up(client, "old@example.com")
+    assert client.post(f"{API}/email/resend", headers=csrf(client)).json()["error"]["code"] == "nothing_pending"
+    client.post(f"{API}/email/change", json={"new_email": "new@example.com", "password": PASSWORD},
+                headers=csrf(client))
+    first = last_code("new@example.com")
+    with owner_engine.begin() as conn:
+        conn.execute(text("UPDATE email_codes SET created_at = now() - interval '1 minute'"))
+    assert client.post(f"{API}/email/resend", headers=csrf(client)).status_code == 202
+    second = last_code("new@example.com")
+    assert len(mails_to("new@example.com")) == 2
+    if first != second:
+        r = client.post(f"{API}/email/confirm", json={"code": first}, headers=csrf(client))
+        assert r.status_code == 400
+    r = client.post(f"{API}/email/confirm", json={"code": second}, headers=csrf(client))
+    assert r.status_code == 200 and r.json()["user"]["email"] == "new@example.com"
+
+
 def test_change_email_to_taken_address_is_refused(client, make_client):
     sign_up(client, "a@example.com")
     sign_up(make_client(), "b@example.com")
