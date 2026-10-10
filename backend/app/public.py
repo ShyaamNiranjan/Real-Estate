@@ -9,15 +9,18 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, Query, Request, Response
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import Row, text
 from sqlalchemy.orm import Session
 
 from app.content import Contact, Image, ListingCard, ListingContent, SiteContent
-from app.db import public_session
+from app.db import public_session, tenant_session
+from app.deps import client_ip
 from app.enquiries import form_token
 from app.errors import ApiError, ErrorResponse
+from app.ratelimit import Rule, enforce
+from app.security import keyed
 from app.usernames import normalize
 
 router = APIRouter(prefix="/api/v1/public", tags=["public"],
@@ -79,6 +82,23 @@ class SitemapSite(BaseModel):
 class SitemapEntry(BaseModel):
     path: str
     last_modified: datetime | None
+
+
+class ReportIn(BaseModel):
+    username: str = Field(max_length=60)
+    listing_slug: str = Field(max_length=120)
+    category: Literal["copyright", "discrimination", "fraud", "inappropriate", "privacy", "other"]
+    details: str = Field(min_length=10, max_length=4000)
+    name: str = Field(default="", max_length=120)
+    email: EmailStr
+    trap: str = Field(default="", max_length=200, description="Hidden field; leave empty.")
+
+
+class ReportOut(BaseModel):
+    status: Literal["received"] = "received"
+
+
+REPORT_IP = Rule("report-ip", 5, 3600)
 
 
 # ---------- helpers ----------
@@ -272,3 +292,22 @@ def sitemap(username: str, response: Response) -> list[SitemapEntry]:
     entries += [SitemapEntry(path=f"/{ws.username}/{r.live_slug}", last_modified=r.live_at) for r in listings]
     _cached(response)
     return entries
+
+
+@router.post("/reports", status_code=202, response_model=ReportOut,
+             responses={k: {"model": ErrorResponse} for k in (422, 429)})
+def report_listing(body: ReportIn, request: Request) -> ReportOut:
+    """"Report this listing" (copyright/DMCA, discrimination, fraud, ...). Reviewed by Scrollwalk staff;
+    the realtor isn't told who reported."""
+    enforce((REPORT_IP, client_ip(request)))
+    if body.trap:
+        return ReportOut()
+    with tenant_session() as s:
+        created = s.execute(
+            text("SELECT listing_report_create(:u, :slug, :c, :d, :n, :e, :ip)"),
+            {"u": normalize(body.username), "slug": body.listing_slug, "c": body.category, "d": body.details.strip(),
+             "n": body.name.strip(), "e": body.email, "ip": keyed("ip", client_ip(request))},
+        ).scalar()
+    if created is None:
+        raise NOT_FOUND
+    return ReportOut()

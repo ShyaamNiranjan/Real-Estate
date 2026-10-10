@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import Row, text
 from sqlalchemy.orm import Session
 
-from app import compliance, sections
+from app import compliance, indexnow, sections
 from app.config import get_settings
 from app.content import ListingContent
 from app.db import tenant_session
@@ -315,6 +315,9 @@ def listing_blockers(s: Session, listing: Row, ws: Row) -> list[Blocker]:
     found = [Blocker(code=f"workspace.{b.code}", message=b.message) for b in workspace_blockers(ws)]
     if ws.subscription_state not in PUBLISH_STATES:
         found.insert(0, Blocker(code="plan", message="Choose a plan to publish."))
+    if listing.taken_down_at is not None:
+        found.insert(0, Blocker(code="taken_down", message="This listing was taken down after a report. "
+                                                           "Contact support@scrollwalk.com."))
     if not listing.title.strip():
         found.append(Blocker(code="title", message="Give this listing a title."))
     if listing.experience_type == "immersive":
@@ -449,6 +452,8 @@ def _go_live(s: Session, listing: Row, ws: Row, access: Access, acknowledge: boo
                 WHERE id = :id"""),
         {"live": json.dumps(_snapshot(s, listing, ws)), "trial": trial_expiry, "stamp": stamp, "id": listing.id},
     )
+    old = [f"/{ws.username}/{listing.live_slug}"] if listing.live_slug and listing.live_slug != listing.slug else []
+    indexnow.submit(f"/{ws.username}/{listing.slug}", f"/{ws.username}", *old)
 
 
 def _can_create(s: Session, ws: Row, active_count: int) -> None:
@@ -786,7 +791,7 @@ def approve(listing_id: UUID, body: PublishIn, auth: Auth = Depends(in_workspace
 @router.post("/{listing_id}/unpublish", response_model=ListingOut)
 def unpublish(listing_id: UUID, auth: Auth = Depends(in_workspace)) -> ListingOut:
     with tenant_session(auth.user_id, auth.workspace_id) as s:
-        access, _ = _writable(s, auth)
+        access, ws = _writable(s, auth)
         listing = _load(s, listing_id)
         perms = _permissions(listing, access)
         if listing.changes_submitted_at is not None and perms.can_edit and not perms.can_publish:
@@ -797,17 +802,20 @@ def unpublish(listing_id: UUID, auth: Auth = Depends(in_workspace)) -> ListingOu
             raise ApiError(403, "permission_denied", "Your role doesn't allow unpublishing this listing.")
         s.execute(text("UPDATE listings SET status = 'draft', changes_submitted_at = NULL WHERE id = :id"),
                   {"id": listing_id})
+        if listing.status in ("published", "sold") and listing.live_slug:
+            indexnow.submit(f"/{ws.username}/{listing.live_slug}", f"/{ws.username}")
         return build(s, listing_id, access)
 
 
 @router.post("/{listing_id}/sold", response_model=ListingOut)
 def mark_sold(listing_id: UUID, auth: Auth = Depends(in_workspace)) -> ListingOut:
     with tenant_session(auth.user_id, auth.workspace_id) as s:
-        access, _ = _writable(s, auth)
+        access, ws = _writable(s, auth)
         listing = _load(s, listing_id)
         if not _permissions(listing, access).can_publish:
             raise ApiError(403, "permission_denied", "Your role doesn't allow changing this listing's status.")
         if listing.status != "published":
             raise ApiError(409, "not_published", "Only a live listing can be marked as sold.")
         s.execute(text("UPDATE listings SET status = 'sold' WHERE id = :id"), {"id": listing_id})
+        indexnow.submit(f"/{ws.username}/{listing.live_slug}", f"/{ws.username}")
         return build(s, listing_id, access)

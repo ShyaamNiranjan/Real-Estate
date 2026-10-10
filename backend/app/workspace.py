@@ -3,6 +3,7 @@
 
 import json
 import re
+from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 from zoneinfo import available_timezones
@@ -13,7 +14,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app import compliance, usernames
+from app import compliance, indexnow, usernames
+from app import email as mail
 from app.db import tenant_session
 from app.deps import Auth, in_workspace
 from app.errors import ApiError, ErrorResponse
@@ -30,6 +32,7 @@ router = APIRouter(
 USERNAME_CHECK = Rule("username-check", 60, 600)
 CLAIM_STATES = frozenset({"trialing", "active", "grace"})
 SETUP_STEPS = ("about_you", "contact", "style", "team")
+SITE_PAGES = ("", "/properties", "/about", "/contact")
 _TIMEZONES = frozenset(available_timezones())
 _PHONE = re.compile(r"^\+[1-9]\d{6,14}$")
 
@@ -432,6 +435,7 @@ def publish_site(body: SitePublishIn, auth: Auth = Depends(in_workspace)) -> Wor
                            site_published_at = coalesce(site_published_at, now()) WHERE id = :w"""),
             {"live": json.dumps(site_snapshot(row)), "w": auth.workspace_id},
         )
+        indexnow.submit(*(f"/{row.username}{p}" for p in SITE_PAGES))
         return load_workspace(s, access)
 
 
@@ -440,9 +444,65 @@ def unpublish_site(auth: Auth = Depends(in_workspace)) -> WorkspaceOut:
     with tenant_session(auth.user_id, auth.workspace_id) as s:
         access = load_access(s, auth.user_id, auth.workspace_id)
         access.require("site.publish")
-        s.execute(text("UPDATE workspaces SET site_live = NULL, site_live_at = NULL WHERE id = :w"),
-                  {"w": auth.workspace_id})
+        username = s.execute(text("""UPDATE workspaces SET site_live = NULL, site_live_at = NULL WHERE id = :w
+                                     RETURNING username"""), {"w": auth.workspace_id}).scalar()
+        indexnow.submit(*(f"/{username}{p}" for p in SITE_PAGES))
         return load_workspace(s, access)
+
+
+class DeleteWorkspaceIn(BaseModel):
+    password: str = Field(max_length=128)
+    confirm: Literal["DELETE"] = Field(description='The Admin types "DELETE".')
+
+
+class DeletionScheduled(BaseModel):
+    status: Literal["scheduled"] = "scheduled"
+    delete_after: datetime
+
+
+@router.post("/delete", response_model=DeletionScheduled)
+def request_deletion(body: DeleteWorkspaceIn, auth: Auth = Depends(in_workspace)) -> DeletionScheduled:
+    """Admin only. The site goes offline now and everything is permanently deleted after 7 days.
+    A running subscription must be cancelled first."""
+    from app.auth import lookup_user
+    from app.security import verify_password
+
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        load_access(s, auth.user_id, auth.workspace_id).require_admin()
+        email = s.execute(text("SELECT email FROM users WHERE id = :u"), {"u": auth.user_id}).scalar_one()
+    user = lookup_user(email)
+    if not verify_password(user.password_hash if user else None, body.password):
+        raise ApiError(401, "invalid_password", "That password isn't right.")
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        status = s.execute(text("SELECT workspace_request_deletion()")).scalar_one()
+        if status == "has_subscription":
+            raise ApiError(409, "cancel_subscription_first", "Cancel your plan in Billing first.")
+        if status != "scheduled":
+            raise ApiError(403, "admin_only", "Only the workspace Admin can do this.")
+        delete_after = s.execute(text("SELECT delete_after FROM workspaces WHERE id = :w"),
+                                 {"w": auth.workspace_id}).scalar_one()
+    mail.send(mail.Email(to=email, subject="Your Scrollwalk account will be deleted",
+                         text=f"As you asked, your site is now offline and everything will be permanently deleted on "
+                              f"{delete_after.strftime('%d %B %Y').lstrip('0')}. Changed your mind? Reply to this "
+                              f"email before then."))
+    return DeletionScheduled(delete_after=delete_after)
+
+
+class Announcement(BaseModel):
+    id: UUID
+    title: str
+    body: str
+    starts_at: datetime
+    ends_at: datetime | None
+
+
+@router.get("/announcements", response_model=list[Announcement])
+def announcements(auth: Auth = Depends(in_workspace)) -> list[Announcement]:
+    """Studio banners from Scrollwalk. Remember dismissals in the browser by id."""
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        rows = s.execute(text("""SELECT id, title, body, starts_at, ends_at FROM announcements
+                                 ORDER BY starts_at DESC LIMIT 5""")).all()
+    return [Announcement(id=r.id, title=r.title, body=r.body, starts_at=r.starts_at, ends_at=r.ends_at) for r in rows]
 
 
 @router.get("/compliance-profiles", response_model=ComplianceProfiles)

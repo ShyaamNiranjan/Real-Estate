@@ -32,7 +32,7 @@ from app.errors import ApiError, ErrorResponse
 from app.permissions import ALL_PERMISSIONS, CATALOGUE, SUGGESTIONS, Access, PermissionInfo, RoleSuggestion, load_access
 from app.plans import TEAM_PLANS, seats
 from app.ratelimit import Rule, enforce
-from app.security import hash_password, new_token, token_hash
+from app.security import hash_password, new_token, token_hash, verify_password
 
 router = APIRouter(
     prefix="/api/v1/team",
@@ -332,6 +332,42 @@ def leave_team(body: SuccessorIn, auth: Auth = Depends(in_workspace)) -> Me:
         workspace_id = ensure_workspace(s, auth.user_id)
         s.execute(text("UPDATE sessions SET workspace_id = :w WHERE id = :id"), {"w": workspace_id, "id": auth.session_id})
     return build_me(Auth(auth.session_id, auth.user_id, workspace_id))
+
+
+class TransferAdminIn(BaseModel):
+    member_id: UUID
+    my_new_role_id: UUID = Field(description="The role you take after handing over the Admin.")
+    password: str = Field(max_length=128)
+
+
+@router.post("/transfer-admin", response_model=list[MemberOut])
+def transfer_admin(body: TransferAdminIn, auth: Auth = Depends(in_workspace)) -> list[MemberOut]:
+    """Admin only, never grantable. The new Admin gets billing and every permission at once."""
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        load_access(s, auth.user_id, auth.workspace_id).require_admin()
+        email = s.execute(text("SELECT email FROM users WHERE id = :u"), {"u": auth.user_id}).scalar_one()
+    user = lookup_user(email)
+    if not verify_password(user.password_hash if user else None, body.password):
+        raise ApiError(401, "invalid_password", "That password isn't right.")
+    with tenant_session(auth.user_id, auth.workspace_id) as s:
+        status = s.execute(text("SELECT admin_transfer(:m, :r)"), {"m": body.member_id, "r": body.my_new_role_id}).scalar_one()
+        if status == "bad_member":
+            raise ApiError(422, "invalid_member", "Choose a verified member of your team.")
+        if status == "bad_role":
+            raise ApiError(422, "invalid_role", "Choose one of your roles for yourself.")
+        if status != "transferred":
+            raise ApiError(403, "admin_only", "Only the workspace Admin can do this.")
+        team, new_admin = s.execute(text("""SELECT w.display_name, u.email FROM memberships m
+                                            JOIN users u ON u.id = m.user_id JOIN workspaces w ON w.id = m.workspace_id
+                                            WHERE m.id = :m"""), {"m": body.member_id}).one()
+        out = _members(s, load_access(s, auth.user_id, auth.workspace_id))
+    mail.send(
+        mail.Email(to=new_admin, subject=f"You're now the Admin of {team or 'your team'} on Scrollwalk",
+                   text="You now have every permission, including billing and plan changes."),
+        mail.Email(to=email, subject=f"You handed over the Admin of {team or 'your team'}",
+                   text=f"{new_admin} is now the Admin. If this wasn't you, contact support@scrollwalk.com now."),
+    )
+    return out
 
 
 # ---------- invitations (managing) ----------

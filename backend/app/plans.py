@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 FREE_PREVIEW_LISTINGS = 1
 TRIAL_LISTINGS_DEFAULT = 3
 TRIAL_LIVE_DAYS = 60
-TRIAL_VIDEO_MAX_BYTES = 500 * 1024 * 1024
+TRIAL_VIDEO_MAX_MB_DEFAULT = 500
 
 GRACE = timedelta(days=30)
 DELETE_AFTER = timedelta(days=182)
@@ -30,6 +30,12 @@ def plan(s: Session, key: str | None) -> Row | None:
 def seats(s: Session, key: str | None) -> int:
     row = plan(s, key)
     return row.seats if row else 1
+
+
+def trial_video_max_bytes(s: Session) -> int:
+    """Set in Super-Admin (platform_settings.trial_video_max_mb)."""
+    mb = s.execute(text("SELECT value FROM platform_settings WHERE key = 'trial_video_max_mb'")).scalar()
+    return int(mb if mb is not None else TRIAL_VIDEO_MAX_MB_DEFAULT) * 1024 * 1024
 
 
 def listing_limit(s: Session, key: str | None) -> int | None:

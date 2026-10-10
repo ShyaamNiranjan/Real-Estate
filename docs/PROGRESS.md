@@ -9,6 +9,20 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 12b: staff actions, moderation, announcements, legal versions
+- Done:
+  - Migration `0013_hq_actions`. Staff still never write customer tables directly: each action is a narrow database function only the staff role can call, and database triggers stop the customer API role from changing the staff-only fields (frozen, banned, taken down, the Admin flag, read-only staff sessions).
+  - Customer actions, each with a required reason in the audit log: extend a trial (days and/or extra listings), give a free plan, end a free plan (30 days' grace), freeze/unfreeze (public pages disappear, the Studio refuses changes), ban/unban a person (signed out everywhere, can't sign in, their workspaces frozen), sign out everywhere, schedule deletion.
+  - "Log in as them": a 30-minute read-only session as the workspace Admin, with a required reason. Every change is refused and the customer's own sessions are untouched.
+  - "Report this listing" on public pages (rate limited, honeypot) → staff review queue → dismiss or take down. A taken-down listing leaves public pages, can't be republished until staff restore it, and the realtor gets an email.
+  - Plans and prices editable in HQ (including new hidden plans for special deals) and the trial video size limit as a setting.
+  - Announcements: Studio banners by audience (all, paying, trialing) and service emails to workspace Admins.
+  - Legal versions: the Super-Admin records a new Terms/Privacy version with 30 days' notice; material changes are emailed and every user must accept them (`Me.legal_pending`).
+  - Customer side: delete my account (password + typing DELETE; 7 days, then permanent), transfer the Admin role to a teammate (password), read-only banner, legal re-acceptance.
+  - IndexNow pings on listing publish/unpublish/sold, site publish/unpublish and takedowns. Off until `INDEXNOW_KEY` is set.
+  - 263 tests passing.
+- Next: 12c (dashboard numbers, CI, full security review).
+
 ## Oct 10, 2026 — slice 12a: Super-Admin sign-in, customers, trial invites, audit log
 - Slice 12 is split in three: 12a (Milestone A, needed for the Oct 23 trials), 12b (staff actions, reports and takedowns, announcements, legal versions, IndexNow, Admin transfer), 12c (dashboard numbers, CI, full security review).
 - Done (12a):
@@ -20,7 +34,6 @@ Update at the end of every working session: what was done, what's next, what's b
   - Trial invites: personal links (one email, single use, emailed) and campaign codes (e.g. REZA30, usage cap, expiry), listings allowed, note, revoke, redemptions and conversions. Customers check a link or code with `POST /api/v1/trial/lookup` and start the trial with `POST /api/v1/trial/redeem`: one trial per person and per workspace, only from the free preview, never after paying. The preview listing becomes a trial listing.
   - Every staff action and every staff sign-in (including failures) is in the audit log.
   - 229 tests passing.
-- Next: 12b.
 
 ## Oct 10, 2026 — slice 11: billing and account lifecycle
 - Done:

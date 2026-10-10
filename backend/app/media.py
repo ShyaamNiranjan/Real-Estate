@@ -26,7 +26,7 @@ from app.deps import Auth, in_workspace
 from app.errors import ApiError, ErrorResponse
 from app.listings import _editable, _load
 from app.permissions import load_access
-from app.plans import TRIAL_VIDEO_MAX_BYTES
+from app.plans import trial_video_max_bytes
 from app.storage import LocalStorage, get_storage, private_to_public, verify_token
 
 router = APIRouter(prefix="/api/v1/media", tags=["media"],
@@ -300,7 +300,7 @@ def request_upload(body: UploadRequest, auth: Auth = Depends(in_workspace)) -> U
         _, ws, listing = _editable(s, auth, body.listing_id)
         max_bytes = VIDEO_MAX_BYTES if is_video else IMAGE_MAX_BYTES
         if is_video and ws.subscription_state in ("trialing", "none"):
-            max_bytes = TRIAL_VIDEO_MAX_BYTES
+            max_bytes = trial_video_max_bytes(s)
         if body.size > max_bytes:
             raise ApiError(422, "file_too_large", f"Files can be up to {max_bytes // (1024 * 1024)} MB.")
         if body.kind in ("gallery", "floor_plan"):

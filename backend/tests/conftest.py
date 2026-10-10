@@ -31,6 +31,7 @@ get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
+    "listing_reports", "announcements",
     "audit_log", "staff_sessions", "trial_redemptions", "trial_invites", "staff", "staff_role_permissions",
     "staff_roles",
     "exports", "lifecycle_notices", "billing_events", "subscriptions",
@@ -68,9 +69,14 @@ def clean(owner_engine):
         conn.execute(text("ALTER TABLE audit_log DISABLE TRIGGER audit_log_no_truncate"))
         conn.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
         conn.execute(text("ALTER TABLE audit_log ENABLE TRIGGER audit_log_no_truncate"))
-        conn.execute(text("""UPDATE plans SET seats = d.seats, listing_limit = d.lim, provider_price_ids = '{}'
-                             FROM (VALUES ('agent', 1, 15), ('team', 10, 50), ('brokerage', 50, NULL::int))
-                                  AS d(key, seats, lim) WHERE plans.key = d.key"""))
+        conn.execute(text("DELETE FROM plans WHERE key NOT IN ('agent', 'team', 'brokerage')"))
+        conn.execute(text("""UPDATE plans SET name = d.name, seats = d.seats, listing_limit = d.lim,
+                                    provider_price_ids = '{}', price_month = NULL, price_year = NULL, is_public = true
+                             FROM (VALUES ('agent', 'Agent', 1, 15), ('team', 'Team', 10, 50),
+                                          ('brokerage', 'Brokerage', 50, NULL::int))
+                                  AS d(key, name, seats, lim) WHERE plans.key = d.key"""))
+        conn.execute(text("DELETE FROM legal_versions WHERE version <> '2026-10-draft'"))
+        conn.execute(text("UPDATE platform_settings SET value = '500' WHERE key = 'trial_video_max_mb'"))
     email.outbox.clear()
     yield
 

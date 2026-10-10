@@ -126,11 +126,24 @@ class MeWorkspace(BaseModel):
     is_admin: bool
 
 
+class LegalPending(BaseModel):
+    document: Literal["terms", "privacy"]
+    version: str = Field(max_length=40)
+    summary: str = Field(default="", max_length=2000)
+
+
 class Me(BaseModel):
     user: MeUser
     workspaces: list[MeWorkspace]
     current_workspace_id: UUID | None
     csrf_token: str
+    read_only: bool = Field(description="A staff member viewing this account; every change is refused.")
+    legal_pending: list[LegalPending] = Field(
+        description="Material changes to accept before continuing: show them and call POST /auth/legal/accept.")
+
+
+class LegalAcceptIn(BaseModel):
+    documents: list[LegalPending] = Field(min_length=1, max_length=2)
 
 
 # ---------- helpers ----------
@@ -161,9 +174,36 @@ def set_password(s: Session, user_id: UUID, password_hash: str) -> None:
         )
 
 
-def record_acceptance(s: Session, user_id: UUID, method: str, request: Request) -> None:
+def current_legal_versions(s: Session) -> dict:
+    """The latest published version of each document that needs accepting."""
     settings = get_settings()
-    for document, version in (("terms", settings.terms_version), ("privacy", settings.privacy_version)):
+    current = {"terms": settings.terms_version, "privacy": settings.privacy_version}
+    rows = s.execute(text("""SELECT DISTINCT ON (document) document, version FROM legal_versions
+                             WHERE published_at <= now() ORDER BY document, published_at DESC""")).all()
+    current.update({r.document: r.version for r in rows})
+    return current
+
+
+def pending_legal(s: Session, user_id: UUID) -> list[LegalPending]:
+    """Documents with a material change the user hasn't accepted yet."""
+    rows = s.execute(text("""
+        SELECT DISTINCT ON (v.document) v.document, v.version, v.summary, v.published_at
+        FROM legal_versions v
+        WHERE v.material AND v.published_at <= now()
+        ORDER BY v.document, v.published_at DESC""")).all()
+    pending = []
+    for v in rows:
+        accepted = s.execute(text("""
+            SELECT 1 FROM legal_acceptances a JOIN legal_versions lv ON lv.document = a.document AND lv.version = a.version
+            WHERE a.user_id = :u AND a.document = :d AND lv.published_at >= :at LIMIT 1"""),
+            {"u": user_id, "d": v.document, "at": v.published_at}).first()
+        if accepted is None:
+            pending.append(LegalPending(document=v.document, version=v.version, summary=v.summary))
+    return pending
+
+
+def record_acceptance(s: Session, user_id: UUID, method: str, request: Request) -> None:
+    for document, version in current_legal_versions(s).items():
         s.execute(
             text("""INSERT INTO legal_acceptances (user_id, document, version, method, ip_hash)
                     VALUES (:u, :d, :v, :m, :ip)"""),
@@ -241,6 +281,8 @@ def start_session(response: Response, request: Request, user_id: UUID) -> Auth:
     settings = get_settings()
     token, session_id = new_token(), uuid4()
     with tenant_session(user_id) as s:
+        if s.execute(text("SELECT banned_at FROM users WHERE id = :u"), {"u": user_id}).scalar() is not None:
+            raise ApiError(403, "account_banned", "This account has been suspended. Contact support@scrollwalk.com.")
         workspace_id = ensure_workspace(s, user_id)
         s.execute(
             text("""INSERT INTO sessions (id, token_hash, user_id, workspace_id, expires_at, ip_hash, user_agent)
@@ -282,6 +324,7 @@ def build_me(auth: Auth) -> Me:
                     ORDER BY m.is_admin DESC, m.joined_at"""),
             {"u": auth.user_id},
         ).all()
+        legal = [] if auth.read_only else pending_legal(s, auth.user_id)
     return Me(
         user=MeUser(
             id=user.id, email=user.email, display_name=user.display_name, avatar_url=user.avatar_url,
@@ -291,6 +334,8 @@ def build_me(auth: Auth) -> Me:
                     for w in workspaces],
         current_workspace_id=auth.workspace_id,
         csrf_token=csrf_token(auth.session_id),
+        read_only=auth.read_only,
+        legal_pending=legal,
     )
 
 
@@ -411,6 +456,20 @@ def reset_password(body: ResetIn, request: Request, response: Response) -> Me:
 
 @router.get("/me", response_model=Me)
 def me(auth: Auth = Depends(signed_in)) -> Me:
+    return build_me(auth)
+
+
+@router.post("/legal/accept", response_model=Me)
+def accept_legal(body: LegalAcceptIn, request: Request, auth: Auth = Depends(signed_in)) -> Me:
+    """Accepts the updated Terms / Privacy Policy listed in `Me.legal_pending`."""
+    with tenant_session(auth.user_id) as s:
+        current = current_legal_versions(s)
+        for doc in body.documents:
+            if current.get(doc.document) != doc.version:
+                raise ApiError(409, "legal_version_changed", "This document was updated again. Reload and review it.")
+            s.execute(text("""INSERT INTO legal_acceptances (user_id, document, version, method, ip_hash)
+                              VALUES (:u, :d, :v, 'reaccept', :ip)"""),
+                      {"u": auth.user_id, "d": doc.document, "v": doc.version, "ip": _ip_hash(request)})
     return build_me(auth)
 
 

@@ -48,6 +48,203 @@
         "title": "AgentOut",
         "type": "object"
       },
+      "Announcement": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "Announcement",
+        "type": "object"
+      },
+      "AnnouncementIn": {
+        "properties": {
+          "audience": {
+            "default": "all",
+            "enum": [
+              "all",
+              "paying",
+              "trialing"
+            ],
+            "title": "Audience",
+            "type": "string"
+          },
+          "body": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "channel": {
+            "enum": [
+              "banner",
+              "email",
+              "both"
+            ],
+            "title": "Channel",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "channel"
+        ],
+        "title": "AnnouncementIn",
+        "type": "object"
+      },
+      "AnnouncementOut": {
+        "properties": {
+          "audience": {
+            "default": "all",
+            "enum": [
+              "all",
+              "paying",
+              "trialing"
+            ],
+            "title": "Audience",
+            "type": "string"
+          },
+          "body": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "channel": {
+            "enum": [
+              "banner",
+              "email",
+              "both"
+            ],
+            "title": "Channel",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "emails_sent": {
+            "title": "Emails Sent",
+            "type": "integer"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "channel",
+          "id",
+          "emails_sent",
+          "created_by",
+          "created_at"
+        ],
+        "title": "AnnouncementOut",
+        "type": "object"
+      },
       "AuditEntry": {
         "properties": {
           "action": {
@@ -141,6 +338,27 @@
           "next_before_id"
         ],
         "title": "AuditPage",
+        "type": "object"
+      },
+      "BanIn": {
+        "properties": {
+          "banned": {
+            "title": "Banned",
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "banned",
+          "reason"
+        ],
+        "title": "BanIn",
         "type": "object"
       },
       "Beat": {
@@ -1158,6 +1376,60 @@
         "title": "DayPoint",
         "type": "object"
       },
+      "DeleteWorkspaceIn": {
+        "properties": {
+          "confirm": {
+            "const": "DELETE",
+            "description": "The Admin types \"DELETE\".",
+            "title": "Confirm",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password",
+          "confirm"
+        ],
+        "title": "DeleteWorkspaceIn",
+        "type": "object"
+      },
+      "DeletionScheduled": {
+        "properties": {
+          "delete_after": {
+            "format": "date-time",
+            "title": "Delete After",
+            "type": "string"
+          },
+          "status": {
+            "const": "scheduled",
+            "default": "scheduled",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "delete_after"
+        ],
+        "title": "DeletionScheduled",
+        "type": "object"
+      },
+      "Done": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "Done",
+        "type": "object"
+      },
       "EmailChangeIn": {
         "properties": {
           "new_email": {
@@ -1643,6 +1915,37 @@
         "title": "ExportOut",
         "type": "object"
       },
+      "ExtendTrialIn": {
+        "properties": {
+          "days": {
+            "default": 0,
+            "description": "Added to every trial listing's live period.",
+            "maximum": 180.0,
+            "minimum": 0.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "extra_listings": {
+            "default": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Extra Listings",
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ExtendTrialIn",
+        "type": "object"
+      },
       "FeaturedIn": {
         "properties": {
           "listing_ids": {
@@ -1797,6 +2100,27 @@
         "title": "FramesOut",
         "type": "object"
       },
+      "FreezeIn": {
+        "properties": {
+          "frozen": {
+            "title": "Frozen",
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "frozen",
+          "reason"
+        ],
+        "title": "FreezeIn",
+        "type": "object"
+      },
       "GenerateIn": {
         "properties": {
           "replace_edits": {
@@ -1818,6 +2142,28 @@
           }
         },
         "title": "GenerateIn",
+        "type": "object"
+      },
+      "GivePlanIn": {
+        "properties": {
+          "plan_key": {
+            "maxLength": 30,
+            "title": "Plan Key",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_key",
+          "reason"
+        ],
+        "title": "GivePlanIn",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -2039,6 +2385,41 @@
         "title": "Image",
         "type": "object"
       },
+      "ImpersonateIn": {
+        "properties": {
+          "reason": {
+            "description": "Required, stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ImpersonateIn",
+        "type": "object"
+      },
+      "ImpersonateOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "ImpersonateOut",
+        "type": "object"
+      },
       "InvitationList": {
         "properties": {
           "items": {
@@ -2223,6 +2604,142 @@
           }
         },
         "title": "Joined",
+        "type": "object"
+      },
+      "LegalAcceptIn": {
+        "properties": {
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/LegalPending"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Documents",
+            "type": "array"
+          }
+        },
+        "required": [
+          "documents"
+        ],
+        "title": "LegalAcceptIn",
+        "type": "object"
+      },
+      "LegalPending": {
+        "properties": {
+          "document": {
+            "enum": [
+              "terms",
+              "privacy"
+            ],
+            "title": "Document",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Summary",
+            "type": "string"
+          },
+          "version": {
+            "maxLength": 40,
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document",
+          "version"
+        ],
+        "title": "LegalPending",
+        "type": "object"
+      },
+      "LegalVersionIn": {
+        "properties": {
+          "document": {
+            "enum": [
+              "terms",
+              "privacy"
+            ],
+            "title": "Document",
+            "type": "string"
+          },
+          "effective_in_days": {
+            "default": 30,
+            "description": "Scope: 30 days' notice for material changes.",
+            "maximum": 90.0,
+            "minimum": 0.0,
+            "title": "Effective In Days",
+            "type": "integer"
+          },
+          "material": {
+            "description": "Material changes must be re-accepted by every user.",
+            "title": "Material",
+            "type": "boolean"
+          },
+          "notify": {
+            "default": true,
+            "description": "Email every user about a material change now.",
+            "title": "Notify",
+            "type": "boolean"
+          },
+          "summary": {
+            "default": "",
+            "description": "What changed, shown to users.",
+            "maxLength": 2000,
+            "title": "Summary",
+            "type": "string"
+          },
+          "version": {
+            "pattern": "^[A-Za-z0-9._-]{1,40}$",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document",
+          "version",
+          "material"
+        ],
+        "title": "LegalVersionIn",
+        "type": "object"
+      },
+      "LegalVersionOut": {
+        "properties": {
+          "accepted_by": {
+            "title": "Accepted By",
+            "type": "integer"
+          },
+          "document": {
+            "title": "Document",
+            "type": "string"
+          },
+          "material": {
+            "title": "Material",
+            "type": "boolean"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document",
+          "version",
+          "material",
+          "summary",
+          "published_at",
+          "accepted_by"
+        ],
+        "title": "LegalVersionOut",
         "type": "object"
       },
       "ListingCard": {
@@ -3417,6 +3934,19 @@
             ],
             "title": "Current Workspace Id"
           },
+          "legal_pending": {
+            "description": "Material changes to accept before continuing: show them and call POST /auth/legal/accept.",
+            "items": {
+              "$ref": "#/components/schemas/LegalPending"
+            },
+            "title": "Legal Pending",
+            "type": "array"
+          },
+          "read_only": {
+            "description": "A staff member viewing this account; every change is refused.",
+            "title": "Read Only",
+            "type": "boolean"
+          },
           "user": {
             "$ref": "#/components/schemas/MeUser"
           },
@@ -3432,7 +3962,9 @@
           "user",
           "workspaces",
           "current_workspace_id",
-          "csrf_token"
+          "csrf_token",
+          "read_only",
+          "legal_pending"
         ],
         "title": "Me",
         "type": "object"
@@ -3936,6 +4468,348 @@
         "title": "PermissionOut",
         "type": "object"
       },
+      "PlanAdminOut": {
+        "properties": {
+          "currency": {
+            "default": "USD",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Features",
+            "type": "array"
+          },
+          "is_public": {
+            "default": true,
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "listing_limit": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null = unlimited",
+            "title": "Listing Limit"
+          },
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "price_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Month"
+          },
+          "price_year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Year"
+          },
+          "provider_price_ids": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "enum": [
+                "month",
+                "year"
+              ]
+            },
+            "title": "Provider Price Ids",
+            "type": "object"
+          },
+          "sales_led": {
+            "default": false,
+            "title": "Sales Led",
+            "type": "boolean"
+          },
+          "seats": {
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Seats",
+            "type": "integer"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "workspaces": {
+            "description": "Workspaces currently on this plan.",
+            "title": "Workspaces",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "seats",
+          "listing_limit",
+          "key",
+          "workspaces"
+        ],
+        "title": "PlanAdminOut",
+        "type": "object"
+      },
+      "PlanCreateIn": {
+        "properties": {
+          "currency": {
+            "default": "USD",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Features",
+            "type": "array"
+          },
+          "is_public": {
+            "default": true,
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "key": {
+            "pattern": "^[a-z][a-z0-9_]{1,29}$",
+            "title": "Key",
+            "type": "string"
+          },
+          "listing_limit": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null = unlimited",
+            "title": "Listing Limit"
+          },
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "price_month": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Month"
+          },
+          "price_year": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Year"
+          },
+          "provider_price_ids": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "enum": [
+                "month",
+                "year"
+              ]
+            },
+            "title": "Provider Price Ids",
+            "type": "object"
+          },
+          "sales_led": {
+            "default": false,
+            "title": "Sales Led",
+            "type": "boolean"
+          },
+          "seats": {
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Seats",
+            "type": "integer"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "seats",
+          "listing_limit",
+          "key"
+        ],
+        "title": "PlanCreateIn",
+        "type": "object"
+      },
+      "PlanIn": {
+        "properties": {
+          "currency": {
+            "default": "USD",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Features",
+            "type": "array"
+          },
+          "is_public": {
+            "default": true,
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "listing_limit": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null = unlimited",
+            "title": "Listing Limit"
+          },
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "price_month": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Month"
+          },
+          "price_year": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Year"
+          },
+          "provider_price_ids": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "enum": [
+                "month",
+                "year"
+              ]
+            },
+            "title": "Provider Price Ids",
+            "type": "object"
+          },
+          "sales_led": {
+            "default": false,
+            "title": "Sales Led",
+            "type": "boolean"
+          },
+          "seats": {
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Seats",
+            "type": "integer"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "seats",
+          "listing_limit"
+        ],
+        "title": "PlanIn",
+        "type": "object"
+      },
       "PlanOut": {
         "properties": {
           "currency": {
@@ -4372,6 +5246,22 @@
         "title": "PublishIn",
         "type": "object"
       },
+      "ReasonIn": {
+        "properties": {
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ReasonIn",
+        "type": "object"
+      },
       "ReportCreate": {
         "properties": {
           "listing_id": {
@@ -4386,42 +5276,63 @@
         "title": "ReportCreate",
         "type": "object"
       },
-      "ReportOut": {
+      "ReportIn": {
         "properties": {
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "listing_id": {
-            "format": "uuid",
-            "title": "Listing Id",
-            "type": "string"
-          },
-          "url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+          "category": {
+            "enum": [
+              "copyright",
+              "discrimination",
+              "fraud",
+              "inappropriate",
+              "privacy",
+              "other"
             ],
-            "description": "Only returned once, when the report is created.",
-            "title": "Url"
+            "title": "Category",
+            "type": "string"
+          },
+          "details": {
+            "maxLength": 4000,
+            "minLength": 10,
+            "title": "Details",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "listing_slug": {
+            "maxLength": 120,
+            "title": "Listing Slug",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Name",
+            "type": "string"
+          },
+          "trap": {
+            "default": "",
+            "description": "Hidden field; leave empty.",
+            "maxLength": 200,
+            "title": "Trap",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 60,
+            "title": "Username",
+            "type": "string"
           }
         },
         "required": [
-          "id",
-          "listing_id",
-          "created_at"
+          "username",
+          "listing_slug",
+          "category",
+          "details",
+          "email"
         ],
-        "title": "ReportOut",
+        "title": "ReportIn",
         "type": "object"
       },
       "ResendIn": {
@@ -4472,6 +5383,31 @@
           "password"
         ],
         "title": "ResetIn",
+        "type": "object"
+      },
+      "ResolveIn": {
+        "properties": {
+          "action": {
+            "enum": [
+              "dismiss",
+              "takedown"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "reason"
+        ],
+        "title": "ResolveIn",
         "type": "object"
       },
       "RewriteIn": {
@@ -4922,6 +5858,22 @@
           }
         },
         "title": "Sent",
+        "type": "object"
+      },
+      "SettingsIO": {
+        "properties": {
+          "trial_video_max_mb": {
+            "description": "Largest walkthrough video on a trial or free preview.",
+            "maximum": 5000.0,
+            "minimum": 50.0,
+            "title": "Trial Video Max Mb",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "trial_video_max_mb"
+        ],
+        "title": "SettingsIO",
         "type": "object"
       },
       "SetupFinishIn": {
@@ -5841,6 +6793,33 @@
         "title": "Totals",
         "type": "object"
       },
+      "TransferAdminIn": {
+        "properties": {
+          "member_id": {
+            "format": "uuid",
+            "title": "Member Id",
+            "type": "string"
+          },
+          "my_new_role_id": {
+            "description": "The role you take after handing over the Admin.",
+            "format": "uuid",
+            "title": "My New Role Id",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "member_id",
+          "my_new_role_id",
+          "password"
+        ],
+        "title": "TransferAdminIn",
+        "type": "object"
+      },
       "TrialIn": {
         "properties": {
           "code": {
@@ -6671,6 +7650,44 @@
         "title": "WorkspaceOut",
         "type": "object"
       },
+      "app__analytics__ReportOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only returned once, when the report is created.",
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "listing_id",
+          "created_at"
+        ],
+        "title": "ReportOut",
+        "type": "object"
+      },
       "app__auth__LoginIn": {
         "properties": {
           "email": {
@@ -6689,6 +7706,132 @@
           "password"
         ],
         "title": "LoginIn",
+        "type": "object"
+      },
+      "app__hq_actions__ReportOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "details": {
+            "title": "Details",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "listing_id": {
+            "format": "uuid",
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "listing_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listing Path"
+          },
+          "listing_taken_down": {
+            "title": "Listing Taken Down",
+            "type": "boolean"
+          },
+          "listing_title": {
+            "title": "Listing Title",
+            "type": "string"
+          },
+          "reporter_email": {
+            "title": "Reporter Email",
+            "type": "string"
+          },
+          "reporter_name": {
+            "title": "Reporter Name",
+            "type": "string"
+          },
+          "resolution": {
+            "title": "Resolution",
+            "type": "string"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "dismissed",
+              "actioned"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "username",
+          "listing_id",
+          "listing_title",
+          "listing_path",
+          "listing_taken_down",
+          "category",
+          "details",
+          "reporter_name",
+          "reporter_email",
+          "status",
+          "created_at",
+          "resolved_at",
+          "resolution"
+        ],
+        "title": "ReportOut",
+        "type": "object"
+      },
+      "app__public__ReportOut": {
+        "properties": {
+          "status": {
+            "const": "received",
+            "default": "received",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "ReportOut",
         "type": "object"
       },
       "app__staff__LoginIn": {
@@ -6746,7 +7889,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/ReportOut"
+                    "$ref": "#/components/schemas/app__analytics__ReportOut"
                   },
                   "title": "Response List Reports Api V1 Analytics Reports Get",
                   "type": "array"
@@ -6818,7 +7961,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReportOut"
+                  "$ref": "#/components/schemas/app__analytics__ReportOut"
                 }
               }
             },
@@ -7337,6 +8480,88 @@
           }
         },
         "summary": "Start",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/legal/accept": {
+      "post": {
+        "description": "Accepts the updated Terms / Privacy Policy listed in `Me.legal_pending`.",
+        "operationId": "accept_legal_api_v1_auth_legal_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalAcceptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Accept Legal",
         "tags": [
           "auth"
         ]
@@ -9294,6 +10519,244 @@
         ]
       }
     },
+    "/api/v1/hq/announcements": {
+      "get": {
+        "operationId": "list_announcements_api_v1_hq_announcements_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnnouncementOut"
+                  },
+                  "title": "Response List Announcements Api V1 Hq Announcements Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "List Announcements",
+        "tags": [
+          "hq"
+        ]
+      },
+      "post": {
+        "description": "Banners show in the Studio between `starts_at` and `ends_at`. Emails go to every workspace Admin in\nthe audience straight away (service announcements only, not marketing).",
+        "operationId": "create_announcement_api_v1_hq_announcements_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnouncementIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Create Announcement",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/announcements/{announcement_id}/end": {
+      "post": {
+        "operationId": "end_announcement_api_v1_hq_announcements__announcement_id__end_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "announcement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Announcement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "End Announcement",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
     "/api/v1/hq/audit": {
       "get": {
         "operationId": "audit_log_api_v1_hq_audit_get",
@@ -10158,6 +11621,1362 @@
         ]
       }
     },
+    "/api/v1/hq/customers/{workspace_id}/delete": {
+      "post": {
+        "description": "Deletion request: offline now, permanently deleted after 7 days by the lifecycle job.",
+        "operationId": "schedule_deletion_api_v1_hq_customers__workspace_id__delete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Schedule Deletion",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/end-free-plan": {
+      "post": {
+        "description": "Ends a free plan like a lapsed subscription: 30 days' grace, then offline.",
+        "operationId": "end_free_plan_api_v1_hq_customers__workspace_id__end_free_plan_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "End Free Plan",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/extend-trial": {
+      "post": {
+        "operationId": "extend_trial_api_v1_hq_customers__workspace_id__extend_trial_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendTrialIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Extend Trial",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/freeze": {
+      "post": {
+        "description": "Frozen: public pages disappear and the Studio refuses every change.",
+        "operationId": "freeze_api_v1_hq_customers__workspace_id__freeze_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FreezeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Freeze",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/give-plan": {
+      "post": {
+        "description": "A free (complimentary) plan with no payment. Not for customers already paying.",
+        "operationId": "give_plan_api_v1_hq_customers__workspace_id__give_plan_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GivePlanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Give Plan",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/impersonate": {
+      "post": {
+        "description": "\"Log in as them\": a 30-minute read-only Studio session as the workspace's Admin, set as the\ncustomer cookie in this browser. Every change is refused.",
+        "operationId": "impersonate_api_v1_hq_customers__workspace_id__impersonate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpersonateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpersonateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Impersonate",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/legal": {
+      "get": {
+        "operationId": "list_legal_api_v1_hq_legal_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LegalVersionOut"
+                  },
+                  "title": "Response List Legal Api V1 Hq Legal Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "List Legal",
+        "tags": [
+          "hq"
+        ]
+      },
+      "post": {
+        "description": "Records a new Terms or Privacy Policy version, effective after `effective_in_days`. New sign-ups accept\nit from then on; with `material`, existing users are asked to accept it (`Me.legal_pending`).",
+        "operationId": "publish_legal_api_v1_hq_legal_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalVersionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LegalVersionOut"
+                  },
+                  "title": "Response Publish Legal Api V1 Hq Legal Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Publish Legal",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/listings/{listing_id}/restore": {
+      "post": {
+        "description": "Lets the realtor publish it again (it stays a draft until they do).",
+        "operationId": "restore_listing_api_v1_hq_listings__listing_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Restore Listing",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/listings/{listing_id}/takedown": {
+      "post": {
+        "operationId": "takedown_listing_api_v1_hq_listings__listing_id__takedown_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Takedown Listing",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/plans": {
+      "get": {
+        "operationId": "list_plans_api_v1_hq_plans_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanAdminOut"
+                  },
+                  "title": "Response List Plans Api V1 Hq Plans Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "List Plans",
+        "tags": [
+          "hq"
+        ]
+      },
+      "post": {
+        "operationId": "create_plan_api_v1_hq_plans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanAdminOut"
+                  },
+                  "title": "Response Create Plan Api V1 Hq Plans Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Create Plan",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/plans/{key}": {
+      "put": {
+        "description": "Takes effect immediately for everyone on the plan. To keep current customers on old terms, hide this\nplan (`is_public: false`) and create a new one.",
+        "operationId": "update_plan_api_v1_hq_plans__key__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanAdminOut"
+                  },
+                  "title": "Response Update Plan Api V1 Hq Plans  Key  Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Update Plan",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/reports": {
+      "get": {
+        "operationId": "list_reports_api_v1_hq_reports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "dismissed",
+                    "actioned"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "open",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/app__hq_actions__ReportOut"
+                  },
+                  "title": "Response List Reports Api V1 Hq Reports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "List Reports",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/reports/{report_id}/resolve": {
+      "post": {
+        "operationId": "resolve_report_api_v1_hq_reports__report_id__resolve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__hq_actions__ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Resolve Report",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
     "/api/v1/hq/roles": {
       "get": {
         "operationId": "list_roles_api_v1_hq_roles_get",
@@ -10557,6 +13376,156 @@
           }
         },
         "summary": "Update Role",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/settings": {
+      "get": {
+        "operationId": "get_platform_settings_api_v1_hq_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsIO"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Get Platform Settings",
+        "tags": [
+          "hq"
+        ]
+      },
+      "put": {
+        "operationId": "put_platform_settings_api_v1_hq_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsIO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsIO"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Put Platform Settings",
         "tags": [
           "hq"
         ]
@@ -11229,6 +14198,194 @@
           }
         },
         "summary": "Revoke Trial Invite",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/users/{user_id}/ban": {
+      "post": {
+        "description": "Banning signs them out everywhere, blocks sign-in and freezes the workspaces they administer.\nUnbanning doesn't unfreeze; do that separately.",
+        "operationId": "ban_user_api_v1_hq_users__user_id__ban_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Ban User",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/users/{user_id}/sign-out": {
+      "post": {
+        "description": "Ends every session (e.g. a customer who thinks someone else got in). They sign in again or reset\ntheir password.",
+        "operationId": "sign_out_user_api_v1_hq_users__user_id__sign_out_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Sign Out User",
         "tags": [
           "hq"
         ]
@@ -13999,6 +17156,88 @@
         ]
       }
     },
+    "/api/v1/public/reports": {
+      "post": {
+        "description": "\"Report this listing\" (copyright/DMCA, discrimination, fraud, ...). Reviewed by Scrollwalk staff;\nthe realtor isn't told who reported.",
+        "operationId": "report_listing_api_v1_public_reports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__public__ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Report Listing",
+        "tags": [
+          "public"
+        ]
+      }
+    },
     "/api/v1/public/reports/{token}": {
       "get": {
         "description": "The seller report behind an unguessable link: one listing, since it was first published.",
@@ -15548,6 +18787,92 @@
         ]
       }
     },
+    "/api/v1/team/transfer-admin": {
+      "post": {
+        "description": "Admin only, never grantable. The new Admin gets billing and every permission at once.",
+        "operationId": "transfer_admin_api_v1_team_transfer_admin_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferAdminIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MemberOut"
+                  },
+                  "title": "Response Transfer Admin Api V1 Team Transfer Admin Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Transfer Admin",
+        "tags": [
+          "team"
+        ]
+      }
+    },
     "/api/v1/trial/lookup": {
       "post": {
         "description": "What the trial link or code offers, before signing up. No sign-in needed.",
@@ -15895,6 +19220,102 @@
         ]
       }
     },
+    "/api/v1/workspace/announcements": {
+      "get": {
+        "description": "Studio banners from Scrollwalk. Remember dismissals in the browser by id.",
+        "operationId": "announcements_api_v1_workspace_announcements_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Announcement"
+                  },
+                  "title": "Response Announcements Api V1 Workspace Announcements Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Announcements",
+        "tags": [
+          "workspace"
+        ]
+      }
+    },
     "/api/v1/workspace/compliance-profiles": {
       "get": {
         "operationId": "compliance_profiles_api_v1_workspace_compliance_profiles_get",
@@ -15981,6 +19402,108 @@
           }
         },
         "summary": "Compliance Profiles",
+        "tags": [
+          "workspace"
+        ]
+      }
+    },
+    "/api/v1/workspace/delete": {
+      "post": {
+        "description": "Admin only. The site goes offline now and everything is permanently deleted after 7 days.\nA running subscription must be cancelled first.",
+        "operationId": "request_deletion_api_v1_workspace_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteWorkspaceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionScheduled"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Request Deletion",
         "tags": [
           "workspace"
         ]

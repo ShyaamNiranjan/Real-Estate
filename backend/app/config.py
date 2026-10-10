@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     app_url: str = "http://localhost:3000"
     api_url: str = "http://localhost:8000"
     hq_url: str = "http://localhost:3000/hq"
+    # Public site (realtor pages live at {site_url}/{username}/{slug}). IndexNow is off until a key is set;
+    # the frontend serves the key file at {site_url}/{indexnow_key}.txt.
+    site_url: str = "https://scrollwalk.com"
+    indexnow_key: str | None = Field(default=None, pattern=r"^[A-Za-z0-9-]{8,128}$")
     staff_session_hours: int = 12
     staff_idle_minutes: int = 60
     allowed_origins: list[str] = ["http://localhost:3000"]
