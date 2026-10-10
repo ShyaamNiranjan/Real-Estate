@@ -1,0 +1,3 @@
+# Reviewed false positives (fingerprint = commit:file:rule:line). Never add real secrets here; rotate them instead.
+# The OpenAPI schema path "/api/v1/openapi.json", matched because the setting is called openapi_url.
+e90688cd4d1ee502260d5bd9f0779c348d6bfda8:backend/app/main.py:generic-api-key:15
