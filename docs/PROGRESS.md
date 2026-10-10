@@ -9,6 +9,19 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 12a: Super-Admin sign-in, customers, trial invites, audit log
+- Slice 12 is split in three: 12a (Milestone A, needed for the Oct 23 trials), 12b (staff actions, reports and takedowns, announcements, legal versions, IndexNow, Admin transfer), 12c (dashboard numbers, CI, full security review).
+- Done (12a):
+  - Migration `0012_staff`: staff, staff roles and permissions, staff sessions, append-only audit log (the database refuses updates, deletes and truncation), trial invites and redemptions. The customer API role can't read any of these.
+  - Staff are separate accounts with their own cookie (SameSite=Strict, 12-hour sessions, signed out after 60 idle minutes). Sign-in is email + password + authenticator code in one step; each code works once. Two-factor secrets are encrypted at rest.
+  - No staff sign-up: the first Super-Admin is created on the server with `python -m app.staff_cli create-super <email> "<name>"` (prints and emails a 72-hour setup link to choose a password and scan the QR code). `reset-super` recovers a lost phone.
+  - Super-Admin manages staff (add by email with a setup link, change role, disable, reset two-factor) and staff roles over a permission catalogue (view customers, log in as customer, manage customers, refunds, revenue, moderation, trial invites, pricing, announcements, audit log).
+  - Customers list (search by username, name or email; filter by state and plan; most popular plan) and a read-only customer view (members, listings, subscription, trial, usage counts, recent staff actions). Buyers' enquiry contents are never shown. Opening a customer is audited.
+  - Trial invites: personal links (one email, single use, emailed) and campaign codes (e.g. REZA30, usage cap, expiry), listings allowed, note, revoke, redemptions and conversions. Customers check a link or code with `POST /api/v1/trial/lookup` and start the trial with `POST /api/v1/trial/redeem`: one trial per person and per workspace, only from the free preview, never after paying. The preview listing becomes a trial listing.
+  - Every staff action and every staff sign-in (including failures) is in the audit log.
+  - 229 tests passing.
+- Next: 12b.
+
 ## Oct 10, 2026 — slice 11: billing and account lifecycle
 - Done:
   - Migration `0011_billing`: plans in the database (Agent 1 seat / 15 listings, Team 10 / 50, Brokerage 50 / unlimited, sales-led), subscriptions, billing events (idempotent, invisible to the API role), lifecycle reminders sent once, downloads (Admin only, enforced in the database).

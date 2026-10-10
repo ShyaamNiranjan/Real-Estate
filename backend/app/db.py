@@ -70,3 +70,10 @@ def tenant_session(
 def public_session() -> Iterator[Session]:
     with Session(public_engine()) as session, session.begin():
         yield session
+
+
+@contextmanager
+def hq_session() -> Iterator[Session]:
+    """Super-Admin: cross-workspace reads, staff tables, audit log. Never used by customer endpoints."""
+    with Session(hq_engine()) as session, session.begin():
+        yield session

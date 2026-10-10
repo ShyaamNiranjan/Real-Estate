@@ -31,6 +31,8 @@ get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
+    "audit_log", "staff_sessions", "trial_redemptions", "trial_invites", "staff", "staff_role_permissions",
+    "staff_roles",
     "exports", "lifecycle_notices", "billing_events", "subscriptions",
     "ai_generations", "analytics_events", "analytics_salts", "seller_reports", "enquiries", "processing_jobs", "media", "listing_slug_history", "listing_sections", "listing_hero", "walkthrough_beats",
     "compliance_acknowledgements", "listings", "waitlist",
@@ -63,7 +65,9 @@ def clean(owner_engine):
     from app import email
 
     with owner_engine.begin() as conn:
+        conn.execute(text("ALTER TABLE audit_log DISABLE TRIGGER audit_log_no_truncate"))
         conn.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+        conn.execute(text("ALTER TABLE audit_log ENABLE TRIGGER audit_log_no_truncate"))
         conn.execute(text("""UPDATE plans SET seats = d.seats, listing_limit = d.lim, provider_price_ids = '{}'
                              FROM (VALUES ('agent', 1, 15), ('team', 10, 50), ('brokerage', 50, NULL::int))
                                   AS d(key, seats, lim) WHERE plans.key = d.key"""))

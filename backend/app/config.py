@@ -27,6 +27,9 @@ class Settings(BaseSettings):
 
     app_url: str = "http://localhost:3000"
     api_url: str = "http://localhost:8000"
+    hq_url: str = "http://localhost:3000/hq"
+    staff_session_hours: int = 12
+    staff_idle_minutes: int = 60
     allowed_origins: list[str] = ["http://localhost:3000"]
     cookie_secure: bool = True
     session_days: int = 30

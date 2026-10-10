@@ -201,6 +201,7 @@ def _activate(s: Session, workspace_id: UUID, plan_key: str) -> None:
     )
     s.execute(text("""DELETE FROM lifecycle_notices WHERE workspace_id = :w
                       AND (notice LIKE 'grace%' OR notice LIKE 'delete%' OR notice = 'offline')"""), {"w": workspace_id})
+    s.execute(text("SELECT trial_converted()"))
 
 
 def _lapse(s: Session, ws: Row) -> list[mail.Email]:
