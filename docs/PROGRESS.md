@@ -9,6 +9,20 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 10: AI writing help
+- Done:
+  - Migration `0010_ai`: `ai_generations` (who, which listing, provider, model, prompt version, attempts, tokens, cost, status) for limits and cost metering; sections remember whether they're AI-drafted; listings remember the tone.
+  - One OpenAI-compatible client switched by settings (`AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` in `backend/.env` only). Without a key a local stand-in streams template text, so the frontend can be built now. Tests never call a real provider.
+  - Text only: structured details, photo labels and the summary with emails, phone numbers and links removed. No images, names, contact details, brokerage or buyer data. A test checks exactly what is sent.
+  - Full generation streamed live (server-sent events): hero line, Story, Spaces, Location with highlights, FAQ, walkthrough captions, SEO title and description, photo descriptions. Tones: Luxury, Modern, Warm, Minimal. Spelling follows the country.
+  - Guardrails: versioned prompt files (`app/prompts/listing_v1.md`, `rewrite_v1.md`), facts-only with `[Add …]` placeholders, fair-housing phrase list in the prompt and checked on every output, length limits enforced, one automatic retry, then the template fallback ("We've started your page…").
+  - Placeholders block publishing. AI-drafted sections are labelled until edited. Regenerating asks before replacing the agent's own text.
+  - Per-section Rewrite (shorter, more luxurious, more factual) returns a proposal; nothing is saved until the agent keeps it.
+  - Limits: 10 full generations per listing per day, 60 rewrites per listing per day, 300 AI requests per workspace per day, 60 per user per hour.
+  - 187 tests passing.
+- Before trials: put the Gemini key in `backend/.env` (`AI_PROVIDER=openai_compatible`), run the prompt against sample listings, then switch to GPT-6 Luna with its prices (`AI_INPUT_USD_PER_MILLION`, `AI_OUTPUT_USD_PER_MILLION`) and rerun by Oct 19–20.
+- Next: slice 11, billing and account lifecycle.
+
 ## Oct 10, 2026 — slice 9: team invites and members
 - Done:
   - Migration `0009_team`: invitations (token stored hashed, 7-day expiry, one open invitation per email). Only members who manage the team can see invitations, enforced in the database.

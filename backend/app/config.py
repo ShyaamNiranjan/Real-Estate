@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     consent_version: str = "2026-10-draft"
     turnstile_secret: str | None = None
 
+    # Any OpenAI-compatible chat API (Gemini in development, GPT-6 Luna in production). "stub" writes
+    # template text locally so the flow works before a key exists. Keys live only in backend/.env.
+    ai_provider: Literal["stub", "openai_compatible"] = "stub"
+    ai_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    ai_api_key: str | None = None
+    ai_model: str = "gemini-2.5-flash"
+    ai_timeout_seconds: float = 60
+    ai_input_usd_per_million: float = 0
+    ai_output_usd_per_million: float = 0
+
     @property
     def google_redirect_uri(self) -> str:
         return f"{self.api_url}/api/v1/auth/google/callback"

@@ -50,6 +50,7 @@ RESERVED_SLUGS = frozenset({"properties", "about", "contact", "neighbourhoods", 
                             "preview", "report", "studio", "sold", "page", "search"})
 LICENSED_PROFILES = frozenset({"US", "CA", "AU", "AE", "IN"})
 SLUG = r"^[a-z0-9]+(-[a-z0-9]+)*$"
+PLACEHOLDER = re.compile(r"\[Add\b[^\]]*\]")
 
 NOT_FOUND = ApiError(404, "not_found", "That listing doesn't exist.")
 
@@ -68,6 +69,7 @@ class SectionOut(BaseModel):
     layout_variant: str
     content: dict
     is_visible: bool
+    ai_drafted: bool = Field(description="Written by AI and not edited since; label it for the agent to review.")
 
 
 class HeroOut(BaseModel):
@@ -283,7 +285,7 @@ def _sections(s: Session, listing: Row, visible_only: bool = False) -> list[Sect
         if r.type == "at_a_glance" and content.get("auto", True):
             content["items"] = sections.glance_items(listing)
         out.append(SectionOut(id=r.id, type=r.type, layout_variant=r.layout_variant, content=content,
-                              is_visible=r.is_visible))
+                              is_visible=r.is_visible, ai_drafted=r.ai_drafted))
     return out
 
 
@@ -326,7 +328,18 @@ def listing_blockers(s: Session, listing: Row, ws: Row) -> list[Blocker]:
     for field in _listing_fields(ws.compliance_profile):
         if field.required and not str(values.get(field.key, "")).strip():
             found.append(Blocker(code=f"compliance.{field.key}", message=f"Add the {field.label.lower()}."))
+    if _has_placeholders(s, listing):
+        found.append(Blocker(code="placeholders", message="Fill in or remove the [Add …] placeholders."))
     return found
+
+
+def _has_placeholders(s: Session, listing: Row) -> bool:
+    texts = [listing.subtitle, listing.seo_title, listing.seo_description]
+    texts += [json.dumps(c) for c in s.execute(
+        text("SELECT content FROM listing_sections WHERE listing_id = :l AND is_visible"), {"l": listing.id}).scalars()]
+    texts += list(s.execute(text("SELECT label || ' ' || text FROM walkthrough_beats WHERE listing_id = :l"),
+                            {"l": listing.id}).scalars())
+    return any(PLACEHOLDER.search(t or "") for t in texts)
 
 
 def _summary_fields(listing: Row, ws: Row) -> dict:
@@ -405,7 +418,7 @@ def _snapshot(s: Session, listing: Row, ws: Row, public: bool = True) -> dict:
         "compliance": [{"key": f.key, "label": f.label, "value": str(values[f.key]).strip()}
                        for f in _listing_fields(ws.compliance_profile) if str(values.get(f.key, "")).strip()],
         "seo_title": listing.seo_title, "seo_description": listing.seo_description,
-        "sections": [sec.model_dump(mode="json", exclude={"is_visible"}) for sec in _sections(s, listing, visible_only=True)],
+        "sections": [sec.model_dump(mode="json", exclude={"is_visible", "ai_drafted"}) for sec in _sections(s, listing, visible_only=True)],
         "hero": {**hero.model_dump(mode="json", exclude={"image_media_id"}), "image": hero_image},
         "beats": [b.model_dump() for b in _beats(s, listing.id)],
         "agent": {"name": listing.agent_name or ws.display_name, "licence_number": licence.strip()},
@@ -642,6 +655,7 @@ def update_section(listing_id: UUID, section_id: UUID, body: SectionPatch,
                 updates["content"] = json.dumps(sections.validate(section.type, body.content))
             except ValueError as exc:
                 raise ApiError(422, "invalid_content", str(exc).splitlines()[0]) from None
+            updates["ai_drafted"] = False
         if body.is_visible is not None:
             updates["is_visible"] = body.is_visible
         if updates:

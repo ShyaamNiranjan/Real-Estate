@@ -897,6 +897,29 @@
         "title": "FramesOut",
         "type": "object"
       },
+      "GenerateIn": {
+        "properties": {
+          "replace_edits": {
+            "default": false,
+            "description": "Send true after the user confirms replacing their own edits.",
+            "title": "Replace Edits",
+            "type": "boolean"
+          },
+          "tone": {
+            "default": "modern",
+            "enum": [
+              "luxury",
+              "modern",
+              "warm",
+              "minimal"
+            ],
+            "title": "Tone",
+            "type": "string"
+          }
+        },
+        "title": "GenerateIn",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3473,6 +3496,56 @@
         "title": "ResetIn",
         "type": "object"
       },
+      "RewriteIn": {
+        "properties": {
+          "section_id": {
+            "format": "uuid",
+            "title": "Section Id",
+            "type": "string"
+          },
+          "style": {
+            "enum": [
+              "shorter",
+              "luxurious",
+              "factual"
+            ],
+            "title": "Style",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section_id",
+          "style"
+        ],
+        "title": "RewriteIn",
+        "type": "object"
+      },
+      "RewriteOut": {
+        "properties": {
+          "content": {
+            "additionalProperties": true,
+            "description": "A proposal only. Save it with PATCH /listings/{id}/sections/{sid} if the user keeps it.",
+            "title": "Content",
+            "type": "object"
+          },
+          "section_id": {
+            "format": "uuid",
+            "title": "Section Id",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section_id",
+          "type",
+          "content"
+        ],
+        "title": "RewriteOut",
+        "type": "object"
+      },
       "RoleIn": {
         "properties": {
           "description": {
@@ -3701,6 +3774,11 @@
       },
       "SectionOut": {
         "properties": {
+          "ai_drafted": {
+            "description": "Written by AI and not edited since; label it for the agent to review.",
+            "title": "Ai Drafted",
+            "type": "boolean"
+          },
           "content": {
             "additionalProperties": true,
             "title": "Content",
@@ -3729,7 +3807,8 @@
           "type",
           "layout_variant",
           "content",
-          "is_visible"
+          "is_visible",
+          "ai_drafted"
         ],
         "title": "SectionOut",
         "type": "object"
@@ -7305,6 +7384,233 @@
         "summary": "Update Listing",
         "tags": [
           "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/ai/generate": {
+      "post": {
+        "description": "Writes the listing's sections, captions, SEO text and photo descriptions from the summary and details.",
+        "operationId": "generate_api_v1_listings__listing_id__ai_generate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Server-sent events (read with fetch + a stream reader; it's a POST). In order: `stage {stage: writing}`, many `text {text}` (append to the live preview), optionally `stage {stage: retrying}` (clear the preview), `stage {stage: building}`, then `done {fallback, message, listing}` with the full listing, or `error {code, message}`."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Generate",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/ai/rewrite": {
+      "post": {
+        "operationId": "rewrite_api_v1_listings__listing_id__ai_rewrite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewriteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewriteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Rewrite",
+        "tags": [
+          "ai"
         ]
       }
     },
