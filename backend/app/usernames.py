@@ -28,6 +28,15 @@ realestate domain berkshire berkshirehathaway douglaselliman elliman engelvoelke
 SUFFIXES = ("realty", "homes", "estates", "properties", "-realty", "-homes", "-estates", "group")
 
 
+MESSAGES = {
+    "too_short": "Use at least 3 characters.",
+    "too_long": "Keep it to 30 characters or fewer.",
+    "invalid_characters": "Use lowercase letters, numbers and single hyphens, starting and ending with a letter or number.",
+    "reserved": "That name is reserved. Try one of the suggestions.",
+    "taken": "Someone already has that name. Try one of the suggestions.",
+}
+
+
 def normalize(raw: str) -> str:
     return raw.strip().lower()
 

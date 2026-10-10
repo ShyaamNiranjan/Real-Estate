@@ -8139,6 +8139,17 @@
             "title": "Available",
             "type": "boolean"
           },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
           "reason": {
             "anyOf": [
               {

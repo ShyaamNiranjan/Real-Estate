@@ -136,6 +136,7 @@ class UsernameCheck(BaseModel):
     username: str
     available: bool
     reason: Literal["too_short", "too_long", "invalid_characters", "reserved", "taken"] | None
+    message: str | None = None
     suggestions: list[str]
 
 
@@ -362,7 +363,8 @@ def check_username(username: str = Query(max_length=60), auth: Auth = Depends(in
         if reason is None and usernames.taken(s, [name]):
             reason = "taken"
         suggestions = usernames.suggestions(s, name) if reason in ("taken", "reserved") else []
-    return UsernameCheck(username=name, available=reason is None, reason=reason, suggestions=suggestions)
+    return UsernameCheck(username=name, available=reason is None, reason=reason,
+                         message=usernames.MESSAGES.get(reason) if reason else None, suggestions=suggestions)
 
 
 @router.post("/username", response_model=WorkspaceOut)
@@ -370,7 +372,7 @@ def claim_username(body: UsernameClaim, auth: Auth = Depends(in_workspace)) -> W
     enforce((USERNAME_CHECK, str(auth.user_id)))
     name = usernames.normalize(body.username)
     if (reason := usernames.problem(name)) is not None:
-        raise ApiError(422, f"username_{reason}", "That username can't be used.")
+        raise ApiError(422, f"username_{reason}", usernames.MESSAGES[reason])
     try:
         with tenant_session(auth.user_id, auth.workspace_id) as s:
             access = load_access(s, auth.user_id, auth.workspace_id)

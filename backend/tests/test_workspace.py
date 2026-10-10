@@ -66,7 +66,10 @@ def test_contact_methods_are_validated_and_normalised(admin):
     assert ws["profile"]["whatsapp"] == "+971501234567"
     assert "contact" not in blocker_codes(ws)
     assert patch(c, {"contact_phone": "415 555 0100"}).status_code == 422
-    assert patch(c, {"booking_url": "http://cal.com/ana"}).status_code == 422
+    r = patch(c, {"booking_url": "http://cal.com/ana"})
+    assert r.status_code == 422
+    assert r.json()["error"]["fields"] == {"booking_url": "Use a secure link starting with https://"}
+    assert patch(c, {"contact_email": "nope"}).json()["error"]["fields"] == {"contact_email": "Enter a valid email address."}
     assert patch(c, {"timezone": "Mars/Olympus"}).status_code == 422
     ws = patch(c, {"contact_phone": "", "whatsapp": "", "booking_url": "", "contact_email": ""}).json()
     assert "contact" in blocker_codes(ws)
@@ -75,8 +78,9 @@ def test_contact_methods_are_validated_and_normalised(admin):
 def test_username_check_rules(admin):
     c = admin["client"]
     check = lambda name: c.get(f"{W}/username/check", params={"username": name}).json()
-    assert check("Ana-Silva") == {"username": "ana-silva", "available": True, "reason": None, "suggestions": []}
-    assert check("ab")["reason"] == "too_short"
+    assert check("Ana-Silva") == {"username": "ana-silva", "available": True, "reason": None,
+                                  "message": None, "suggestions": []}
+    assert check("ab")["reason"] == "too_short" and check("ab")["message"] == "Use at least 3 characters."
     assert check("a" * 31)["reason"] == "too_long"
     assert check("ana--silva")["reason"] == "invalid_characters"
     assert check("-ana")["reason"] == "invalid_characters"

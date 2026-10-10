@@ -64,7 +64,11 @@ def install(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
-        fields = {".".join(str(p) for p in e["loc"][1:]) or "body": friendly(e) for e in exc.errors()}
+        fields: dict[str, str] = {}
+        for e in exc.errors():
+            # Union members add tags like "literal['']" to loc; the first branch's message is the useful one.
+            key = ".".join(str(p) for p in e["loc"][1:] if not (isinstance(p, str) and "[" in p)) or "body"
+            fields.setdefault(key, friendly(e))
         return JSONResponse(_body("validation_error", "Some fields need attention.", fields), status_code=422)
 
     @app.exception_handler(StarletteHTTPException)

@@ -5680,6 +5680,8 @@ export interface components {
         UsernameCheck: {
             /** Available */
             available: boolean;
+            /** Message */
+            message?: string | null;
             /** Reason */
             reason: ("too_short" | "too_long" | "invalid_characters" | "reserved" | "taken") | null;
             /** Suggestions */
