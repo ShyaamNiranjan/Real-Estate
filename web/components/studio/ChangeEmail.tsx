@@ -112,7 +112,7 @@ export function ChangeEmail({ hasPassword }: { hasPassword: boolean }) {
         )}
       </div>
 
-      <div role="status" className="a-status">
+      <div role="status" className="a-alert-slot">
         {notice && <p className="a-alert a-alert--ok">{notice}</p>}
       </div>
 

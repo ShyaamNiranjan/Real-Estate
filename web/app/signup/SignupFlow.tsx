@@ -10,9 +10,19 @@ import { Field, FormAlert, PasswordField, SubmitButton, isEmail, passwordProblem
 import { api } from '@/lib/api/client'
 import { asApiError, unwrap, type ApiError } from '@/lib/api/errors'
 import { planByKey } from '@/lib/plans'
+import { REF_KEY, isReferral } from '@/components/marketing/RefCapture'
 import { useSession } from '@/lib/session'
 
 type Errors = Partial<Record<'display_name' | 'email' | 'password' | 'accept_terms', string>>
+
+/** The `?ref=` code from this URL or the landing page (kept by `RefCapture`), if the API would accept it. */
+function referralCode(): string {
+  let ref = new URLSearchParams(window.location.search).get('ref')
+  try {
+    ref ||= sessionStorage.getItem(REF_KEY)
+  } catch {}
+  return ref && isReferral(ref) ? ref : ''
+}
 
 export function SignupFlow({ plan, free }: { plan: string | null; free: boolean }) {
   useSignedInRedirect()
@@ -65,7 +75,7 @@ export function SignupFlow({ plan, free }: { plan: string | null; free: boolean 
     try {
       await unwrap(
         api.POST('/api/v1/auth/signup', {
-          body: { email: email.trim(), password, display_name: name.trim(), accept_terms: true },
+          body: { email: email.trim(), password, display_name: name.trim(), accept_terms: true, referral: referralCode() },
         }),
       )
       setSentAt(Date.now())

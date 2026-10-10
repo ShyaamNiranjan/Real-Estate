@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { YeFooter } from '@/components/marketing/chrome'
 import { FrameLoop, type LoopSource } from '@/components/marketing/FrameLoop'
+import { RefCapture } from '@/components/marketing/RefCapture'
 import { SiteNav } from '@/components/marketing/SiteNav'
 import { WaitlistForm } from '@/components/marketing/WaitlistForm'
 import { PLANS } from '@/lib/plans'
@@ -46,6 +47,7 @@ const FAQ = [
 export default function Landing() {
   return (
     <div className="ye">
+      <RefCapture />
       <SiteNav />
 
       <main id="main">

@@ -26,10 +26,24 @@ function isErrorEnvelope(value: unknown): value is { error: ErrorBody } {
   return !!body && typeof body === 'object' && 'code' in body && 'message' in body
 }
 
+/**
+ * Union-typed fields come back keyed like `booking_url.function-after[...]`, one entry per union
+ * branch. Key them by the field (keeping `compliance.<key>`), first message wins.
+ */
+function normaliseFields(fields: Record<string, string> | null | undefined): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, message] of Object.entries(fields ?? {})) {
+    const parts = key.split('.')
+    const name = parts[0] === 'compliance' && parts[1] && !parts[1].includes('[') ? `compliance.${parts[1]}` : parts[0]
+    out[name] ??= message
+  }
+  return out
+}
+
 export function toApiError(status: number, payload: unknown): ApiError {
   if (isErrorEnvelope(payload)) {
     const { code, message, fields } = payload.error
-    return new ApiError(status, code, message, fields)
+    return new ApiError(status, code, message, normaliseFields(fields))
   }
   return new ApiError(status, status >= 500 || status === 0 ? 'server_error' : 'unknown_error', UNKNOWN_MESSAGE)
 }
