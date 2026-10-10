@@ -30,7 +30,7 @@ from app.db import tenant_session
 from app.deps import Auth, client_ip, in_workspace, signed_in
 from app.errors import ApiError, ErrorResponse
 from app.permissions import ALL_PERMISSIONS, CATALOGUE, SUGGESTIONS, Access, PermissionInfo, RoleSuggestion, load_access
-from app.plans import SEATS
+from app.plans import TEAM_PLANS, seats
 from app.ratelimit import Rule, enforce
 from app.security import hash_password, new_token, token_hash
 
@@ -45,7 +45,6 @@ invite_router = APIRouter(
     responses={k: {"model": ErrorResponse} for k in (401, 403, 404, 409, 410, 422, 429)},
 )
 
-TEAM_PLANS = frozenset({"team", "brokerage"})
 INVITE_TTL = timedelta(days=7)
 INVITE_SEND = Rule("invite-send", 50, 86400)
 INVITE_LOOKUP_IP = Rule("invite-lookup-ip", 30, 600)
@@ -388,7 +387,7 @@ def _seats(s: Session, workspace_id: UUID) -> SeatsOut:
                 FROM workspaces w WHERE w.id = :w"""),
         {"w": workspace_id},
     ).one()
-    return SeatsOut(used=row.used, total=SEATS.get(row.plan_key or "", 1))
+    return SeatsOut(used=row.used, total=seats(s, row.plan_key))
 
 
 def _inviter(s: Session, access: Access) -> Access:
@@ -521,7 +520,7 @@ def _lookup(token: str) -> Row:
 
 def _accept(s: Session, token: str, plan_key: str | None) -> UUID:
     row = s.execute(text("SELECT * FROM invitation_accept(:h, :seats)"),
-                    {"h": token_hash(token), "seats": SEATS.get(plan_key or "", 1)}).one()
+                    {"h": token_hash(token), "seats": seats(s, plan_key)}).one()
     if row.status == "email_mismatch":
         raise ApiError(403, "invitation_email_mismatch", "This invitation was sent to a different email. "
                                                          "Sign in with that email to accept it.")

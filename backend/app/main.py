@@ -3,7 +3,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from app import ai, analytics, auth, enquiries, errors, google, listings, media, public, team, waitlist, workspace
+from app import (ai, analytics, auth, billing, enquiries, errors, exports, google, listings, media, public, team,
+                 waitlist, workspace)
 from app.config import get_settings
 from app.db import public_session
 from app.deps import SAFE_METHODS
@@ -25,6 +26,9 @@ app.include_router(enquiries.router)
 app.include_router(analytics.public_router)
 app.include_router(analytics.router)
 app.include_router(waitlist.router)
+app.include_router(billing.router)
+app.include_router(billing.public_router)
+app.include_router(exports.router)
 
 
 @app.middleware("http")

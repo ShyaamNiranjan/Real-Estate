@@ -25,11 +25,11 @@ from app.errors import ApiError, ErrorResponse
 from app.permissions import Access, load_access
 from app.plans import (
     FREE_PREVIEW_LISTINGS,
-    LISTING_LIMITS,
     PUBLISH_STATES,
     READ_ONLY_STATES,
     TRIAL_LISTINGS_DEFAULT,
     TRIAL_LIVE_DAYS,
+    listing_limit,
 )
 from app.workspace import (
     Blocker,
@@ -451,7 +451,7 @@ def _go_live(s: Session, listing: Row, ws: Row, access: Access, acknowledge: boo
     )
 
 
-def _can_create(ws: Row, active_count: int) -> None:
+def _can_create(s: Session, ws: Row, active_count: int) -> None:
     state = ws.subscription_state
     if state in ("grace", "offline"):
         raise ApiError(403, "lapsed_no_new_listings", "Resubscribe to create new listings.")
@@ -460,7 +460,7 @@ def _can_create(ws: Row, active_count: int) -> None:
     if state == "trialing" and ws.listings_created_total >= (ws.trial_listing_allowance or TRIAL_LISTINGS_DEFAULT):
         raise ApiError(403, "trial_limit", "You've used all your trial listings. Subscribe to create more.")
     if state == "active":
-        limit = LISTING_LIMITS.get(ws.plan_key or "", 0)
+        limit = listing_limit(s, ws.plan_key)
         if limit is not None and active_count >= limit:
             raise ApiError(403, "listing_limit", "You've reached your plan's listing limit.")
 
@@ -506,7 +506,7 @@ def create_listing(body: ListingCreate, auth: Auth = Depends(in_workspace)) -> L
         access.require("listings.create")
         s.execute(text("SELECT 1 FROM workspaces WHERE id = :w FOR UPDATE"), {"w": auth.workspace_id})
         active = s.execute(text("SELECT count(*) FROM listings WHERE deleted_at IS NULL AND status <> 'sold'")).scalar_one()
-        _can_create(ws, active)
+        _can_create(s, ws, active)
         agent = access.membership_id if access.has("listings.listing_agent") else None
         listing_id = s.execute(
             text("""INSERT INTO listings (workspace_id, agent_member_id, created_by, slug, title, price_currency,

@@ -31,6 +31,7 @@ get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
+    "exports", "lifecycle_notices", "billing_events", "subscriptions",
     "ai_generations", "analytics_events", "analytics_salts", "seller_reports", "enquiries", "processing_jobs", "media", "listing_slug_history", "listing_sections", "listing_hero", "walkthrough_beats",
     "compliance_acknowledgements", "listings", "waitlist",
     "invitations", "role_permissions", "roles", "workspace_profiles", "username_holds",
@@ -63,6 +64,9 @@ def clean(owner_engine):
 
     with owner_engine.begin() as conn:
         conn.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+        conn.execute(text("""UPDATE plans SET seats = d.seats, listing_limit = d.lim, provider_price_ids = '{}'
+                             FROM (VALUES ('agent', 1, 15), ('team', 10, 50), ('brokerage', 50, NULL::int))
+                                  AS d(key, seats, lim) WHERE plans.key = d.key"""))
     email.outbox.clear()
     yield
 

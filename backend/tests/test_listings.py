@@ -230,10 +230,9 @@ def test_free_preview_is_one_private_listing(client):
     assert r.status_code == 403 and r.json()["error"]["code"] == "plan_required"
 
 
-def test_plan_listing_limit(admin, monkeypatch):
-    from app import listings as listings_module
-
-    monkeypatch.setitem(listings_module.LISTING_LIMITS, "agent", 1)
+def test_plan_listing_limit(admin, owner_engine):
+    with owner_engine.begin() as conn:
+        conn.execute(text("UPDATE plans SET listing_limit = 1 WHERE key = 'agent'"))
     c = admin["client"]
     first = new_listing(c)
     r = c.post(L, json={"title": "Over"}, headers=csrf(c))

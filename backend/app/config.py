@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     ai_input_usd_per_million: float = 0
     ai_output_usd_per_million: float = 0
 
+    # Merchant of record. "stub" simulates checkout and webhooks until a provider is chosen; it is
+    # refused when ENVIRONMENT=production. Secrets live only in backend/.env.
+    billing_provider: Literal["stub"] = "stub"
+    billing_api_key: str | None = None
+    billing_webhook_secret: str | None = None
+
     @property
     def google_redirect_uri(self) -> str:
         return f"{self.api_url}/api/v1/auth/google/callback"

@@ -4,8 +4,10 @@ import logging
 import sys
 
 from app.analytics import send_weekly_summaries
+from app.billing import run_lifecycle
+from app.exports import run_exports
 
-JOBS = {"weekly": send_weekly_summaries}
+JOBS = {"weekly": send_weekly_summaries, "lifecycle": run_lifecycle, "exports": run_exports}
 
 
 def main() -> None:

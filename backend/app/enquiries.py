@@ -259,15 +259,21 @@ def export_enquiries(auth: Auth = Depends(in_workspace)) -> Response:
     with tenant_session(auth.user_id, auth.workspace_id) as s:
         access = _require_view(s, auth)
         access.require("enquiries.export")
-        rows = s.execute(text(f"{_SELECT} ORDER BY e.created_at DESC")).all()
+        body = enquiries_csv(s)
+    return Response(body, media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="enquiries.csv"'})
+
+
+def enquiries_csv(s) -> str:
+    """Every enquiry the current member can see, as a spreadsheet-safe CSV (with a BOM for Excel)."""
+    rows = s.execute(text(f"{_SELECT} ORDER BY e.created_at DESC")).all()
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["Received", "Name", "Email", "Phone", "Message", "Listing", "Agent", "Status", "Page"])
     for r in rows:
         writer.writerow([_sheet_safe(v) for v in (r.created_at.isoformat(timespec="minutes"), r.name, r.email, r.phone,
                                                   r.message, r.listing_title, r.agent_name, r.status, r.page_path)])
-    return Response("\ufeff" + buffer.getvalue(), media_type="text/csv; charset=utf-8",
-                    headers={"Content-Disposition": 'attachment; filename="enquiries.csv"'})
+    return "\ufeff" + buffer.getvalue()
 
 
 @router.get("/{enquiry_id}", response_model=EnquiryOut)

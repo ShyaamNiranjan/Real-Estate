@@ -21,11 +21,12 @@ from app.errors import ApiError, ErrorResponse
 from app.usernames import normalize
 
 router = APIRouter(prefix="/api/v1/public", tags=["public"],
-                   responses={k: {"model": ErrorResponse} for k in (404, 503)})
+                   responses={k: {"model": ErrorResponse} for k in (404, 410, 503)})
 
 CACHE = "public, max-age=0, s-maxage=30, stale-while-revalidate=300"
 NOT_FOUND = ApiError(404, "not_found", "This page doesn't exist.")
 UNAVAILABLE = ApiError(503, "temporarily_unavailable", "This page is temporarily unavailable.")
+NO_LONGER_AVAILABLE = ApiError(410, "no_longer_available", "This page is no longer available.")
 OTHER_HOMES = 4
 
 
@@ -90,6 +91,8 @@ def _workspace(s: Session, username: str) -> Row:
         {"u": normalize(username)},
     ).first()
     if row is None:
+        if s.execute(text("SELECT username_held(:u)"), {"u": normalize(username)}).scalar():
+            raise NO_LONGER_AVAILABLE
         raise NOT_FOUND
     if row.subscription_state == "offline":
         raise UNAVAILABLE

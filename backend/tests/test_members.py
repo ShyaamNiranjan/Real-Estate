@@ -134,13 +134,12 @@ def test_reinviting_replaces_the_open_invitation(admin):
     invite(c, "bea@example.com", agent["id"])
     invite(c, "bea@example.com", agent["id"])
     data = c.get(f"{T}/invitations").json()
-    assert len(data["items"]) == 1 and data["seats"] == {"used": 2, "total": 5}
+    assert len(data["items"]) == 1 and data["seats"] == {"used": 2, "total": 10}
 
 
-def test_seats_are_counted_with_open_invitations(admin, monkeypatch, make_client):
-    from app import plans
-
-    monkeypatch.setitem(plans.SEATS, "team", 2)
+def test_seats_are_counted_with_open_invitations(admin, owner_engine):
+    with owner_engine.begin() as conn:
+        conn.execute(text("UPDATE plans SET seats = 2 WHERE key = 'team'"))
     c = admin["client"]
     agent = role(c)
     assert invite(c, "bea@example.com", agent["id"]).status_code == 201

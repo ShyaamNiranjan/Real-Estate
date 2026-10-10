@@ -9,6 +9,19 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 11: billing and account lifecycle
+- Done:
+  - Migration `0011_billing`: plans in the database (Agent 1 seat / 15 listings, Team 10 / 50, Brokerage 50 / unlimited, sales-led), subscriptions, billing events (idempotent, invisible to the API role), lifecycle reminders sent once, downloads (Admin only, enforced in the database).
+  - Merchant-of-record adapter with a local stand-in (`BILLING_PROVIDER=stub`), so the full flow works without keys: checkout page, plan change, cancel at period end, resume, payment method/invoices page, simulated renewal, failed payment and end. The stand-in refuses to start in production. A real provider is one more class in `app/billing_providers.py`.
+  - Signed webhooks: bad signatures get 400; each event applies exactly once; older events never overwrite newer ones; unknown workspaces/plans are recorded and rejected.
+  - Checkout rules: Brokerage is "Talk to us", downgrades must fit current listings and seats, auto-renewal/no-refund wording returned for the checkout screen.
+  - Lifecycle (`python -m app.jobs lifecycle`, hourly): lapse → 30 days' grace (live, no new listings) → offline (503 pages, read-only Studio) → permanent deletion 6 months after lapsing. Emails at lapse, 7 and 1 days before offline, offline, 30 and 7 days before deletion. Resubscribing restores everything at the same addresses. Trial-listing (7 and 1 days) and annual renewal (7 days) reminders.
+  - Deletion removes every row and file for the workspace; the username is held 60 days ("no longer available", 410) and only the previous owner can reclaim it.
+  - "Download everything" (`/api/v1/export`): zip of every listing's text, captions, original photos/floor plans/videos, profile and enquiries CSV. Built by the worker (or `python -m app.jobs exports`), emailed when ready, link valid 1 hour and refreshed on each visit, file kept 7 days. One at a time, 3 per day. Works when offline.
+  - 209 tests passing.
+- Before trials (by Oct 18–20): merchant-of-record API key, webhook secret, product/price IDs and a sandbox account, then add the provider class and test checkout end to end. Schedule `lifecycle` hourly.
+- Next: slice 12, Super-Admin, audit log, trial invites, legal versions, IndexNow, security review, CI.
+
 ## Oct 10, 2026 — slice 10: AI writing help
 - Done:
   - Migration `0010_ai`: `ai_generations` (who, which listing, provider, model, prompt version, attempts, tokens, cost, status) for limits and cost metering; sections remember whether they're AI-drafted; listings remember the tone.

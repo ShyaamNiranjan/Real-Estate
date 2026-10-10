@@ -22,6 +22,7 @@ from sqlalchemy import text
 
 from app import email
 from app.db import tenant_session
+from app.exports import run_exports
 from app.media import frame_key
 from app.storage import get_storage
 
@@ -252,7 +253,8 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     log.info("worker started")
     while True:
-        if not run_once():
+        busy = run_once()
+        if not busy and not run_exports():
             time.sleep(2)
 
 
