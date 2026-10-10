@@ -214,11 +214,14 @@ def check_code(s: Session, user_id: UUID, purpose: str, code: str) -> Row | None
 
 
 def ensure_workspace(s: Session, user_id: UUID) -> UUID:
-    """The user's workspace: the one they administer first, else any active membership, else a
-    new personal workspace with them as Admin."""
+    """The user's workspace: the one they used most recently, else the one they administer, else
+    any active membership, else a new personal workspace with them as Admin."""
     existing = s.execute(
-        text("""SELECT workspace_id FROM memberships WHERE user_id = :u AND removed_at IS NULL
-                ORDER BY is_admin DESC, joined_at LIMIT 1"""),
+        text("""SELECT m.workspace_id FROM memberships m WHERE m.user_id = :u AND m.removed_at IS NULL
+                ORDER BY (SELECT max(se.last_seen_at) FROM sessions se
+                          WHERE se.user_id = :u AND se.workspace_id = m.workspace_id) DESC NULLS LAST,
+                         m.is_admin DESC, m.joined_at
+                LIMIT 1"""),
         {"u": user_id},
     ).scalar()
     if existing:
@@ -409,6 +412,29 @@ def reset_password(body: ResetIn, request: Request, response: Response) -> Me:
 @router.get("/me", response_model=Me)
 def me(auth: Auth = Depends(signed_in)) -> Me:
     return build_me(auth)
+
+
+class SwitchIn(BaseModel):
+    workspace_id: UUID | None = Field(
+        default=None, description="Omit after `no_workspace` (e.g. removed from a team) to land somewhere sensible.")
+
+
+@router.post("/workspace", response_model=Me)
+def switch_workspace(body: SwitchIn, auth: Auth = Depends(signed_in)) -> Me:
+    with tenant_session(auth.user_id) as s:
+        if body.workspace_id is None:
+            workspace_id = ensure_workspace(s, auth.user_id)
+        else:
+            workspace_id = s.execute(
+                text("""SELECT workspace_id FROM memberships
+                        WHERE user_id = :u AND workspace_id = :w AND removed_at IS NULL"""),
+                {"u": auth.user_id, "w": body.workspace_id},
+            ).scalar()
+            if workspace_id is None:
+                raise ApiError(403, "not_a_member", "You're not a member of that workspace.")
+        s.execute(text("UPDATE sessions SET workspace_id = :w, last_seen_at = now() WHERE id = :id"),
+                  {"w": workspace_id, "id": auth.session_id})
+    return build_me(Auth(auth.session_id, auth.user_id, workspace_id))
 
 
 @router.post("/logout", status_code=204)

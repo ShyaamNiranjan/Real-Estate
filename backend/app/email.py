@@ -48,6 +48,24 @@ def existing_account_email(to: str) -> Email:
     )
 
 
+def invitation_email(to: str, inviter: str, team: str, role: str, link: str) -> Email:
+    return Email(
+        to=to,
+        subject=f"{inviter} invited you to join {team} on Scrollwalk",
+        text=f"{inviter} invited you to join {team} on Scrollwalk as {role}.\n\n"
+        f"Accept the invitation:\n{link}\n\n"
+        "The link works for 7 days. If you weren't expecting this, you can ignore this email.",
+    )
+
+
+def member_joined_notice(to: str, member: str, team: str) -> Email:
+    return Email(
+        to=to,
+        subject=f"{member} joined {team} on Scrollwalk",
+        text=f"{member} accepted your invitation and is now on your team.",
+    )
+
+
 def email_changed_notice(to: str, new_email: str) -> Email:
     return Email(
         to=to,

@@ -31,7 +31,7 @@ BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
     "analytics_events", "analytics_salts", "seller_reports", "enquiries", "processing_jobs", "media", "listing_slug_history", "listing_sections", "listing_hero", "walkthrough_beats",
     "compliance_acknowledgements", "listings", "waitlist",
-    "role_permissions", "roles", "workspace_profiles", "username_holds",
+    "invitations", "role_permissions", "roles", "workspace_profiles", "username_holds",
     "sessions", "email_codes", "rate_limits", "legal_acceptances",
     "memberships", "user_credentials", "workspaces", "users",
 )

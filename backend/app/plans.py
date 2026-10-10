@@ -2,6 +2,7 @@
 Super-Admin) with the billing slice."""
 
 LISTING_LIMITS: dict[str, int | None] = {"agent": 15, "team": 50, "brokerage": None}
+SEATS: dict[str, int] = {"agent": 1, "team": 5, "brokerage": 25}
 FREE_PREVIEW_LISTINGS = 1
 TRIAL_LISTINGS_DEFAULT = 3
 TRIAL_LIVE_DAYS = 60

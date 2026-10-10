@@ -9,6 +9,16 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 9: team invites and members
+- Done:
+  - Migration `0009_team`: invitations (token stored hashed, 7-day expiry, one open invitation per email). Only members who manage the team can see invitations, enforced in the database.
+  - Invite by email into a role: Team/Brokerage plans only, you can't invite into a role with permissions you lack, seats count members plus open invitations (placeholder seats: Team 5, Brokerage 25). Resend (new link, old link dies), withdraw, re-invite replaces.
+  - Joining: the emailed link proves the inbox, so new people set a password and are in (no code); existing users sign in and accept. The account email must match the invitation. The inviter gets a "joined" email.
+  - Members: list (contact details only for managers and yourself), change role (immediate), licence number (self or manager), remove with handover of listings and enquiries to a chosen member (default the Admin), leave team. The Admin is protected; managers can't touch members with stronger permissions.
+  - Workspace switching; sign-in returns to the workspace used last; removed members land back in their own workspace.
+  - 173 tests passing.
+- Next: slice 10, AI writing help.
+
 ## Oct 10, 2026 — slice 8: analytics
 - Done:
   - Migration `0008_analytics`: analytics_events, daily salts, seller_reports.
