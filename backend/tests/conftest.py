@@ -31,6 +31,7 @@ get_settings.cache_clear()
 
 BACKEND = Path(__file__).resolve().parent.parent
 TABLES = (
+    "payments", "mrr_changes", "cost_entries",
     "listing_reports", "announcements",
     "audit_log", "staff_sessions", "trial_redemptions", "trial_invites", "staff", "staff_role_permissions",
     "staff_roles",

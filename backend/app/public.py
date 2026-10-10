@@ -98,7 +98,7 @@ class ReportOut(BaseModel):
     status: Literal["received"] = "received"
 
 
-REPORT_IP = Rule("report-ip", 5, 3600)
+REPORT_IP = Rule("listing-report-ip", 5, 3600)
 
 
 # ---------- helpers ----------

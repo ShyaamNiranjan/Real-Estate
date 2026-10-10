@@ -10,6 +10,7 @@ import json
 import logging
 from collections import Counter
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
@@ -216,6 +217,19 @@ def _lapse(s: Session, ws: Row) -> list[mail.Email]:
     return _notice(s, ws.id, "grace_start", "grace_start", date=_date(now + GRACE))
 
 
+def _record_payment(s: Session, provider: str, event: BillingEvent, list_price: Decimal) -> None:
+    p = event.payment or {}
+    if p.get("kind") not in ("charge", "refund", "failed") or not p.get("id"):
+        raise ValueError("malformed payment")
+    amount = Decimal(str(p["amount"])) if p.get("amount") is not None else list_price
+    fee = Decimal(str(p["fee"])) if p.get("fee") is not None else Decimal(0)
+    if provider == "stub" and p.get("fee") is None and p["kind"] == "charge" and amount:
+        fee = round(amount * Decimal("0.05") + Decimal("0.50"), 2)  # roughly a merchant of record's cut
+    s.execute(text("SELECT payment_record(:p, :id, :w, :k, :a, :f, :t, :c, :at)"),
+              {"p": provider, "id": p["id"], "w": event.workspace_id, "k": p["kind"], "a": amount, "f": fee,
+               "t": Decimal(str(p.get("tax") or 0)), "c": p.get("currency") or "USD", "at": event.occurred_at})
+
+
 def process_event(provider: str, event: BillingEvent) -> str:
     """Applies one provider event exactly once. Returns what happened, for logs and tests."""
     with tenant_session() as s:
@@ -233,8 +247,12 @@ def process_event(provider: str, event: BillingEvent) -> str:
             ws = s.execute(text("SELECT * FROM workspaces WHERE id = :w FOR UPDATE"), {"w": event.workspace_id}).first()
             if ws is None or ws.deleted_at is not None:
                 raise ValueError("unknown or deleted workspace")
-            if s.execute(text("SELECT 1 FROM plans WHERE key = :k"), {"k": event.plan_key}).first() is None:
+            plan = s.execute(text("SELECT price_month, price_year FROM plans WHERE key = :k"), {"k": event.plan_key}).first()
+            if plan is None:
                 raise ValueError(f"unknown plan {event.plan_key}")
+            list_price = (plan.price_year if event.interval == "year" else plan.price_month) or Decimal(0)
+            if event.payment:
+                _record_payment(s, provider, event, list_price)
             sub = _subscription(s)
             if sub and event.occurred_at < sub.last_event_at:
                 result = "stale"
@@ -242,15 +260,16 @@ def process_event(provider: str, event: BillingEvent) -> str:
                 s.execute(
                     text("""INSERT INTO subscriptions (workspace_id, provider, provider_customer_id, provider_subscription_id,
                                                        plan_key, billing_interval, status, current_period_end,
-                                                       cancel_at_period_end, last_event_at)
-                            VALUES (:w, :p, :c, :sid, :plan, :i, :st, :end, :cancel, :at)
+                                                       cancel_at_period_end, last_event_at, mrr)
+                            VALUES (:w, :p, :c, :sid, :plan, :i, :st, :end, :cancel, :at, :mrr)
                             ON CONFLICT (workspace_id) DO UPDATE SET provider = :p, provider_customer_id = :c,
                               provider_subscription_id = :sid, plan_key = :plan, billing_interval = :i, status = :st,
                               current_period_end = :end, cancel_at_period_end = :cancel, last_event_at = :at,
-                              updated_at = now()"""),
+                              mrr = :mrr, updated_at = now()"""),
                     {"w": event.workspace_id, "p": provider, "c": event.customer_id, "sid": event.subscription_id,
                      "plan": event.plan_key, "i": event.interval, "st": event.status, "end": event.current_period_end,
-                     "cancel": event.cancel_at_period_end, "at": event.occurred_at},
+                     "cancel": event.cancel_at_period_end, "at": event.occurred_at,
+                     "mrr": round(list_price / 12, 2) if event.interval == "year" else list_price},
                 )
                 if event.status in LIVE_STATUSES:
                     _activate(s, ws.id, event.plan_key)

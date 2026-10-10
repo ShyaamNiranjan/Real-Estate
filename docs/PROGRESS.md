@@ -9,6 +9,17 @@ Update at the end of every working session: what was done, what's next, what's b
 ## Frontend waiting on backend
 - (none: the waitlist endpoint is live as `POST /api/v1/waitlist`, replace the mock)
 
+## Oct 10, 2026 — slice 12c: dashboard numbers, CI, security review (backend complete)
+- Done:
+  - Migration `0014_metrics`: payments (charges, refunds, failed payments with fees and tax), MRR history (written by a database trigger whenever a subscription changes), monthly cost entries, sign-up source and referral code.
+  - Super-Admin dashboard: growth (sign-ups by source, funnel, trial conversion, waitlist), revenue (MRR and its monthly movements, ARR, ARPU, LTV, churn, net revenue after fees and tax, failed payments, refunds, upcoming renewals), profit overall and per customer, usage (listings, views, enquiries, AI cost, storage, database size, video minutes, customers near limits) and health (failed/stuck jobs, billing errors, AI failures, failed sign-ins).
+  - Refunds and paid plan changes from HQ, through the merchant of record.
+  - CI (`.github/workflows/backend.yml`, GitHub Actions on every push touching the backend, plus weekly): full test suite against a fresh PostgreSQL 17 with the real role setup, migrations up/down/up, API contract drift check, dependency vulnerability audit (pip-audit), static analysis (Bandit), secret scanning of the whole git history (Gitleaks).
+  - Security review: no secrets anywhere in git history, no `.env` ever committed, no server keys referenced by frontend code, no known vulnerable dependencies. New permanent guard tests: every endpoint needs a session unless it's on a short public list, HQ endpoints accept only staff sessions, every database function that bypasses row-level security pins its search path and isn't callable by everyone, staff functions are callable only by the staff role, customer roles can't touch staff or money tables or read password hashes, API docs are off in production. Fixed along the way: a shared rate-limit bucket name, storage key checks that could be skipped in optimised Python, email subjects stripped of line breaks.
+  - 280 tests passing.
+- Backend for launch is complete. Waiting on accounts/keys: merchant of record, Resend + DNS, Gemini, Google OAuth, R2, hosting, IndexNow key.
+- Before production: run the worker and the hourly lifecycle job, run uvicorn behind the proxy with `--proxy-headers`, set `ENVIRONMENT=production`, point an uptime monitor at `/api/v1/health`.
+
 ## Oct 10, 2026 — slice 12b: staff actions, moderation, announcements, legal versions
 - Done:
   - Migration `0013_hq_actions`. Staff still never write customer tables directly: each action is a narrow database function only the staff role can call, and database triggers stop the customer API role from changing the staff-only fields (frozen, banned, taken down, the Admin flag, read-only staff sessions).
@@ -21,7 +32,6 @@ Update at the end of every working session: what was done, what's next, what's b
   - Customer side: delete my account (password + typing DELETE; 7 days, then permanent), transfer the Admin role to a teammate (password), read-only banner, legal re-acceptance.
   - IndexNow pings on listing publish/unpublish/sold, site publish/unpublish and takedowns. Off until `INDEXNOW_KEY` is set.
   - 263 tests passing.
-- Next: 12c (dashboard numbers, CI, full security review).
 
 ## Oct 10, 2026 — slice 12a: Super-Admin sign-in, customers, trial invites, audit log
 - Slice 12 is split in three: 12a (Milestone A, needed for the Oct 23 trials), 12b (staff actions, reports and takedowns, announcements, legal versions, IndexNow, Admin transfer), 12c (dashboard numbers, CI, full security review).

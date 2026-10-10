@@ -1,7 +1,7 @@
 """Outgoing email. Until Resend is connected, messages are logged and kept in `outbox`."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 log = logging.getLogger("scrollwalk.email")
 
@@ -19,6 +19,8 @@ outbox: list[Email] = []
 
 def send(*emails: Email) -> None:
     for email in emails:
+        if "\r" in email.subject or "\n" in email.subject:
+            email = replace(email, subject=" ".join(email.subject.split()))
         outbox.append(email)
         log.warning("EMAIL to=%s subject=%r\n%s", email.to, email.subject, email.text)
 

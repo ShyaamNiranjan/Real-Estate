@@ -48,8 +48,13 @@ class Storage:
     def list_prefix(self, prefix: str) -> list[str]: ...
 
 
+def _require_prefix(key: str, prefix: str) -> None:
+    if not key.startswith(prefix) or ".." in key.split("/"):
+        raise ValueError(f"storage key must start with {prefix}")
+
+
 def private_to_public(key: str) -> str:
-    assert key.startswith("private/")
+    _require_prefix(key, "private/")
     return "public/" + key[len("private/"):]
 
 
@@ -97,7 +102,7 @@ class LocalStorage(Storage):
         return f"{self.api}/file/{_sign({'op': 'get', 'key': key, 'exp': int(time.time()) + ttl})}"
 
     def public_url(self, key):
-        assert key.startswith("public/")
+        _require_prefix(key, "public/")
         return f"{self.api}/{key}"
 
     def head(self, key):
@@ -172,7 +177,7 @@ class R2Storage(Storage):
                                                   Params={"Bucket": self.bucket, "Key": key})
 
     def public_url(self, key):
-        assert key.startswith("public/")
+        _require_prefix(key, "public/")
         return f"{self.public_base}/{key}"
 
     def head(self, key):

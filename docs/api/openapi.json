@@ -525,7 +525,7 @@
             "type": "object"
           },
           "usage": {
-            "$ref": "#/components/schemas/UsageOut"
+            "$ref": "#/components/schemas/app__billing__UsageOut"
           }
         },
         "required": [
@@ -612,6 +612,37 @@
           "suggestions"
         ],
         "title": "Catalogue",
+        "type": "object"
+      },
+      "ChangePlanIn": {
+        "properties": {
+          "interval": {
+            "enum": [
+              "month",
+              "year"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "plan_key": {
+            "maxLength": 30,
+            "title": "Plan Key",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_key",
+          "interval",
+          "reason"
+        ],
+        "title": "ChangePlanIn",
         "type": "object"
       },
       "CheckoutIn": {
@@ -746,6 +777,96 @@
           }
         },
         "title": "Contact",
+        "type": "object"
+      },
+      "CostIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category": {
+            "enum": [
+              "hosting",
+              "database",
+              "storage",
+              "ai",
+              "email",
+              "worker",
+              "domain",
+              "other"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "month": {
+            "description": "YYYY-MM",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "title": "Month",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "category",
+          "amount"
+        ],
+        "title": "CostIn",
+        "type": "object"
+      },
+      "CostOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "month": {
+            "format": "date",
+            "title": "Month",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "month",
+          "category",
+          "amount",
+          "note",
+          "created_at"
+        ],
+        "title": "CostOut",
         "type": "object"
       },
       "CustomerListing": {
@@ -1068,6 +1189,57 @@
           "recent_staff_actions"
         ],
         "title": "CustomerOut",
+        "type": "object"
+      },
+      "CustomerProfit": {
+        "properties": {
+          "ai_cost": {
+            "title": "Ai Cost",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "net_revenue": {
+            "title": "Net Revenue",
+            "type": "string"
+          },
+          "profit": {
+            "title": "Profit",
+            "type": "string"
+          },
+          "shared_costs": {
+            "title": "Shared Costs",
+            "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "username",
+          "display_name",
+          "net_revenue",
+          "ai_cost",
+          "shared_costs",
+          "profit"
+        ],
+        "title": "CustomerProfit",
         "type": "object"
       },
       "CustomerRow": {
@@ -2121,6 +2293,34 @@
         "title": "FreezeIn",
         "type": "object"
       },
+      "Funnel": {
+        "properties": {
+          "finished_setup": {
+            "title": "Finished Setup",
+            "type": "integer"
+          },
+          "first_listing_published": {
+            "title": "First Listing Published",
+            "type": "integer"
+          },
+          "paid": {
+            "title": "Paid",
+            "type": "integer"
+          },
+          "signed_up": {
+            "title": "Signed Up",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "signed_up",
+          "finished_setup",
+          "first_listing_published",
+          "paid"
+        ],
+        "title": "Funnel",
+        "type": "object"
+      },
       "GenerateIn": {
         "properties": {
           "replace_edits": {
@@ -2166,6 +2366,91 @@
         "title": "GivePlanIn",
         "type": "object"
       },
+      "GrowthOut": {
+        "properties": {
+          "by_plan": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Plan",
+            "type": "object"
+          },
+          "by_state": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By State",
+            "type": "object"
+          },
+          "customers": {
+            "title": "Customers",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "funnel": {
+            "$ref": "#/components/schemas/Funnel",
+            "description": "People who signed up in the period and how far they got."
+          },
+          "most_popular_plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Most Popular Plan"
+          },
+          "signups": {
+            "items": {
+              "$ref": "#/components/schemas/SignupDay"
+            },
+            "title": "Signups",
+            "type": "array"
+          },
+          "signups_by_source": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Signups By Source",
+            "type": "object"
+          },
+          "top_referrals": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Top Referrals",
+            "type": "array"
+          },
+          "trials": {
+            "$ref": "#/components/schemas/TrialStats"
+          },
+          "waitlist": {
+            "title": "Waitlist",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days",
+          "customers",
+          "by_state",
+          "by_plan",
+          "most_popular_plan",
+          "signups",
+          "signups_by_source",
+          "top_referrals",
+          "funnel",
+          "trials",
+          "waitlist"
+        ],
+        "title": "GrowthOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2195,6 +2480,56 @@
           "database"
         ],
         "title": "Health",
+        "type": "object"
+      },
+      "HealthOut": {
+        "properties": {
+          "ai_failures_24h": {
+            "title": "Ai Failures 24H",
+            "type": "integer"
+          },
+          "billing_errors_7d": {
+            "title": "Billing Errors 7D",
+            "type": "integer"
+          },
+          "external": {
+            "title": "External",
+            "type": "string"
+          },
+          "failed_jobs_24h": {
+            "title": "Failed Jobs 24H",
+            "type": "integer"
+          },
+          "open_reports": {
+            "title": "Open Reports",
+            "type": "integer"
+          },
+          "sign_in_lockouts_24h": {
+            "description": "Customer sign-in or code checks that hit the rate limit.",
+            "title": "Sign In Lockouts 24H",
+            "type": "integer"
+          },
+          "staff_failed_logins_24h": {
+            "title": "Staff Failed Logins 24H",
+            "type": "integer"
+          },
+          "stuck_jobs": {
+            "description": "Running for over 30 minutes, or queued for over 15.",
+            "title": "Stuck Jobs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "failed_jobs_24h",
+          "stuck_jobs",
+          "billing_errors_7d",
+          "ai_failures_24h",
+          "staff_failed_logins_24h",
+          "sign_in_lockouts_24h",
+          "open_reports",
+          "external"
+        ],
+        "title": "HealthOut",
         "type": "object"
       },
       "Hero": {
@@ -4422,6 +4757,124 @@
         "title": "Named",
         "type": "object"
       },
+      "NearLimit": {
+        "properties": {
+          "active_listings": {
+            "title": "Active Listings",
+            "type": "integer"
+          },
+          "listing_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listing Limit"
+          },
+          "members": {
+            "title": "Members",
+            "type": "integer"
+          },
+          "plan_key": {
+            "title": "Plan Key",
+            "type": "string"
+          },
+          "seats": {
+            "title": "Seats",
+            "type": "integer"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "username",
+          "plan_key",
+          "active_listings",
+          "listing_limit",
+          "members",
+          "seats"
+        ],
+        "title": "NearLimit",
+        "type": "object"
+      },
+      "PaymentOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "fee": {
+            "title": "Fee",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "charge",
+              "refund",
+              "failed"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "provider_payment_id": {
+            "title": "Provider Payment Id",
+            "type": "string"
+          },
+          "refunded": {
+            "title": "Refunded",
+            "type": "boolean"
+          },
+          "tax": {
+            "title": "Tax",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider_payment_id",
+          "kind",
+          "amount",
+          "fee",
+          "tax",
+          "currency",
+          "occurred_at",
+          "refunded"
+        ],
+        "title": "PaymentOut",
+        "type": "object"
+      },
       "PermissionInfo": {
         "properties": {
           "description": {
@@ -5235,6 +5688,94 @@
         "title": "ProfilePatch",
         "type": "object"
       },
+      "ProfitMonth": {
+        "properties": {
+          "ai_metered": {
+            "description": "AI cost from token counts; used unless an `ai` bill was entered.",
+            "title": "Ai Metered",
+            "type": "string"
+          },
+          "costs": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Costs",
+            "type": "object"
+          },
+          "costs_total": {
+            "title": "Costs Total",
+            "type": "string"
+          },
+          "month": {
+            "format": "date",
+            "title": "Month",
+            "type": "string"
+          },
+          "net_revenue": {
+            "title": "Net Revenue",
+            "type": "string"
+          },
+          "profit": {
+            "title": "Profit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "net_revenue",
+          "costs",
+          "ai_metered",
+          "costs_total",
+          "profit"
+        ],
+        "title": "ProfitMonth",
+        "type": "object"
+      },
+      "ProfitOut": {
+        "properties": {
+          "costs_total": {
+            "title": "Costs Total",
+            "type": "string"
+          },
+          "currency": {
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/ProfitMonth"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "net_revenue": {
+            "title": "Net Revenue",
+            "type": "string"
+          },
+          "per_customer": {
+            "description": "Paying customers over the whole period: their net revenue minus their own AI cost and an equal share of every other cost.",
+            "items": {
+              "$ref": "#/components/schemas/CustomerProfit"
+            },
+            "title": "Per Customer",
+            "type": "array"
+          },
+          "profit": {
+            "title": "Profit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "months",
+          "net_revenue",
+          "costs_total",
+          "profit",
+          "per_customer"
+        ],
+        "title": "ProfitOut",
+        "type": "object"
+      },
       "PublishIn": {
         "properties": {
           "acknowledge_compliance": {
@@ -5260,6 +5801,75 @@
           "reason"
         ],
         "title": "ReasonIn",
+        "type": "object"
+      },
+      "RefundIn": {
+        "properties": {
+          "payment_id": {
+            "format": "uuid",
+            "title": "Payment Id",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why; stored in the audit log.",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_id",
+          "reason"
+        ],
+        "title": "RefundIn",
+        "type": "object"
+      },
+      "Renewal": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "interval": {
+            "title": "Interval",
+            "type": "string"
+          },
+          "plan_key": {
+            "title": "Plan Key",
+            "type": "string"
+          },
+          "renews_at": {
+            "format": "date-time",
+            "title": "Renews At",
+            "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "username",
+          "plan_key",
+          "interval",
+          "renews_at",
+          "amount"
+        ],
+        "title": "Renewal",
         "type": "object"
       },
       "ReportCreate": {
@@ -5408,6 +6018,218 @@
           "reason"
         ],
         "title": "ResolveIn",
+        "type": "object"
+      },
+      "RevenueMonth": {
+        "properties": {
+          "customers_churned": {
+            "title": "Customers Churned",
+            "type": "integer"
+          },
+          "failed_payments": {
+            "title": "Failed Payments",
+            "type": "integer"
+          },
+          "fees": {
+            "title": "Fees",
+            "type": "string"
+          },
+          "gross": {
+            "title": "Gross",
+            "type": "string"
+          },
+          "month": {
+            "format": "date",
+            "title": "Month",
+            "type": "string"
+          },
+          "mrr_churned": {
+            "title": "Mrr Churned",
+            "type": "string"
+          },
+          "mrr_contraction": {
+            "title": "Mrr Contraction",
+            "type": "string"
+          },
+          "mrr_end": {
+            "title": "Mrr End",
+            "type": "string"
+          },
+          "mrr_expansion": {
+            "title": "Mrr Expansion",
+            "type": "string"
+          },
+          "mrr_new": {
+            "title": "Mrr New",
+            "type": "string"
+          },
+          "mrr_reactivation": {
+            "title": "Mrr Reactivation",
+            "type": "string"
+          },
+          "net": {
+            "title": "Net",
+            "type": "string"
+          },
+          "refunds": {
+            "title": "Refunds",
+            "type": "string"
+          },
+          "tax": {
+            "title": "Tax",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "gross",
+          "refunds",
+          "fees",
+          "tax",
+          "net",
+          "failed_payments",
+          "mrr_new",
+          "mrr_expansion",
+          "mrr_contraction",
+          "mrr_churned",
+          "mrr_reactivation",
+          "mrr_end",
+          "customers_churned"
+        ],
+        "title": "RevenueMonth",
+        "type": "object"
+      },
+      "RevenueOut": {
+        "properties": {
+          "arpu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "MRR per paying customer.",
+            "title": "Arpu"
+          },
+          "arr": {
+            "title": "Arr",
+            "type": "string"
+          },
+          "currency": {
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "customer_churn_30d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Churn 30D"
+          },
+          "failed_payments_30d": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Failed Payments 30D",
+            "type": "object"
+          },
+          "ltv": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ARPU / monthly customer churn; null until there's churn to measure.",
+            "title": "Ltv"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueMonth"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "mrr": {
+            "title": "Mrr",
+            "type": "string"
+          },
+          "paying_customers": {
+            "title": "Paying Customers",
+            "type": "integer"
+          },
+          "refunds_30d": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Refunds 30D",
+            "type": "object"
+          },
+          "revenue_churn_30d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revenue Churn 30D"
+          },
+          "total": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "All time: gross, refunds, fees, tax, net.",
+            "title": "Total",
+            "type": "object"
+          },
+          "upcoming_renewals_30d": {
+            "items": {
+              "$ref": "#/components/schemas/Renewal"
+            },
+            "title": "Upcoming Renewals 30D",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mrr",
+          "arr",
+          "paying_customers",
+          "arpu",
+          "ltv",
+          "customer_churn_30d",
+          "revenue_churn_30d",
+          "total",
+          "failed_payments_30d",
+          "refunds_30d",
+          "upcoming_renewals_30d",
+          "months"
+        ],
+        "title": "RevenueOut",
         "type": "object"
       },
       "RewriteIn": {
@@ -5970,6 +6792,33 @@
         "title": "SetupStep",
         "type": "object"
       },
+      "SignupDay": {
+        "properties": {
+          "by_source": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Source",
+            "type": "object"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "total",
+          "by_source"
+        ],
+        "title": "SignupDay",
+        "type": "object"
+      },
       "SignupIn": {
         "properties": {
           "accept_terms": {
@@ -5992,6 +6841,14 @@
             "maxLength": 128,
             "minLength": 8,
             "title": "Password",
+            "type": "string"
+          },
+          "referral": {
+            "default": "",
+            "description": "A `?ref=` code from the landing page, if any (for growth stats).",
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_.-]*$",
+            "title": "Referral",
             "type": "string"
           }
         },
@@ -7117,6 +7974,48 @@
         "title": "TrialStarted",
         "type": "object"
       },
+      "TrialStats": {
+        "properties": {
+          "conversion_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversion Rate"
+          },
+          "converted": {
+            "title": "Converted",
+            "type": "integer"
+          },
+          "median_days_to_convert": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Days To Convert"
+          },
+          "started": {
+            "title": "Started",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "started",
+          "converted",
+          "conversion_rate",
+          "median_days_to_convert"
+        ],
+        "title": "TrialStats",
+        "type": "object"
+      },
       "UploadOut": {
         "properties": {
           "media": {
@@ -7232,24 +8131,6 @@
           "url"
         ],
         "title": "UrlOut",
-        "type": "object"
-      },
-      "UsageOut": {
-        "properties": {
-          "active_listings": {
-            "title": "Active Listings",
-            "type": "integer"
-          },
-          "members": {
-            "title": "Members",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "active_listings",
-          "members"
-        ],
-        "title": "UsageOut",
         "type": "object"
       },
       "UsernameCheck": {
@@ -7708,6 +8589,24 @@
         "title": "LoginIn",
         "type": "object"
       },
+      "app__billing__UsageOut": {
+        "properties": {
+          "active_listings": {
+            "title": "Active Listings",
+            "type": "integer"
+          },
+          "members": {
+            "title": "Members",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active_listings",
+          "members"
+        ],
+        "title": "UsageOut",
+        "type": "object"
+      },
       "app__hq_actions__ReportOut": {
         "properties": {
           "category": {
@@ -7820,6 +8719,96 @@
           "resolution"
         ],
         "title": "ReportOut",
+        "type": "object"
+      },
+      "app__hq_dashboard__UsageOut": {
+        "properties": {
+          "ai_cost_30d": {
+            "title": "Ai Cost 30D",
+            "type": "string"
+          },
+          "ai_failed_30d": {
+            "title": "Ai Failed 30D",
+            "type": "integer"
+          },
+          "ai_requests_30d": {
+            "title": "Ai Requests 30D",
+            "type": "integer"
+          },
+          "database_bytes": {
+            "title": "Database Bytes",
+            "type": "integer"
+          },
+          "emails_sent_30d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null until Resend is connected.",
+            "title": "Emails Sent 30D"
+          },
+          "enquiries_30d": {
+            "title": "Enquiries 30D",
+            "type": "integer"
+          },
+          "listings_live": {
+            "title": "Listings Live",
+            "type": "integer"
+          },
+          "listings_total": {
+            "title": "Listings Total",
+            "type": "integer"
+          },
+          "near_limits": {
+            "description": "80%+ of the listing limit, or every seat taken.",
+            "items": {
+              "$ref": "#/components/schemas/NearLimit"
+            },
+            "title": "Near Limits",
+            "type": "array"
+          },
+          "storage_bytes": {
+            "title": "Storage Bytes",
+            "type": "integer"
+          },
+          "trial_listings_live": {
+            "title": "Trial Listings Live",
+            "type": "integer"
+          },
+          "video_minutes_30d": {
+            "title": "Video Minutes 30D",
+            "type": "number"
+          },
+          "views_30d": {
+            "title": "Views 30D",
+            "type": "integer"
+          },
+          "visitors_30d": {
+            "title": "Visitors 30D",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "listings_live",
+          "listings_total",
+          "trial_listings_live",
+          "views_30d",
+          "visitors_30d",
+          "enquiries_30d",
+          "ai_requests_30d",
+          "ai_failed_30d",
+          "ai_cost_30d",
+          "storage_bytes",
+          "database_bytes",
+          "video_minutes_30d",
+          "emails_sent_30d",
+          "near_limits"
+        ],
+        "title": "UsageOut",
         "type": "object"
       },
       "app__public__ReportOut": {
@@ -11390,6 +12379,221 @@
         ]
       }
     },
+    "/api/v1/hq/costs": {
+      "get": {
+        "operationId": "list_costs_api_v1_hq_costs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "months",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 36,
+              "minimum": 1,
+              "title": "Months",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CostOut"
+                  },
+                  "title": "Response List Costs Api V1 Hq Costs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "List Costs",
+        "tags": [
+          "hq"
+        ]
+      },
+      "post": {
+        "description": "A bill for one month (hosting, database, ...). An `ai` entry for a month replaces the metered AI\nestimate for that month (reconciled against the invoice).",
+        "operationId": "add_cost_api_v1_hq_costs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CostIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Add Cost",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/costs/{cost_id}": {
+      "delete": {
+        "operationId": "delete_cost_api_v1_hq_costs__cost_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cost_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cost Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Delete Cost",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
     "/api/v1/hq/customers": {
       "get": {
         "operationId": "customers_api_v1_hq_customers_get",
@@ -11616,6 +12820,100 @@
           }
         },
         "summary": "Customer",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/change-plan": {
+      "post": {
+        "description": "Moves a paying customer to another plan through the merchant of record (it prorates).\nFor customers without a subscription use give-plan.",
+        "operationId": "change_paid_plan_api_v1_hq_customers__workspace_id__change_plan_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePlanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Change Paid Plan",
         "tags": [
           "hq"
         ]
@@ -12179,6 +13477,534 @@
           }
         },
         "summary": "Impersonate",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/payments": {
+      "get": {
+        "operationId": "customer_payments_api_v1_hq_customers__workspace_id__payments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentOut"
+                  },
+                  "title": "Response Customer Payments Api V1 Hq Customers  Workspace Id  Payments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Customer Payments",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/customers/{workspace_id}/refund": {
+      "post": {
+        "description": "Full refund of one charge through the merchant of record. The plan itself isn't cancelled.",
+        "operationId": "refund_api_v1_hq_customers__workspace_id__refund_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Refund",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/dashboard/growth": {
+      "get": {
+        "operationId": "growth_api_v1_hq_dashboard_growth_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 7,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrowthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Growth",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/dashboard/health": {
+      "get": {
+        "operationId": "health_api_v1_hq_dashboard_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/dashboard/profit": {
+      "get": {
+        "operationId": "profit_api_v1_hq_dashboard_profit_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "months",
+            "required": false,
+            "schema": {
+              "default": 6,
+              "maximum": 36,
+              "minimum": 1,
+              "title": "Months",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Profit",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/dashboard/revenue": {
+      "get": {
+        "operationId": "revenue_api_v1_hq_dashboard_revenue_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "months",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 36,
+              "minimum": 1,
+              "title": "Months",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Revenue",
+        "tags": [
+          "hq"
+        ]
+      }
+    },
+    "/api/v1/hq/dashboard/usage": {
+      "get": {
+        "operationId": "usage_api_v1_hq_dashboard_usage_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__hq_dashboard__UsageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Usage",
         "tags": [
           "hq"
         ]

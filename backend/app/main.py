@@ -3,13 +3,19 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from app import (ai, analytics, auth, billing, enquiries, errors, exports, google, hq, hq_actions, listings, media,
-                 public, staff, team, trials, waitlist, workspace)
+from app import (ai, analytics, auth, billing, enquiries, errors, exports, google, hq, hq_actions, hq_dashboard,
+                 listings, media, public, staff, team, trials, waitlist, workspace)
 from app.config import get_settings
 from app.db import public_session
 from app.deps import SAFE_METHODS
 
-app = FastAPI(title="Scrollwalk API", version="0.1.0", openapi_url="/api/v1/openapi.json")
+_production = get_settings().environment == "production"
+app = FastAPI(
+    title="Scrollwalk API", version="0.1.0",
+    openapi_url=None if _production else "/api/v1/openapi.json",
+    docs_url=None if _production else "/docs",
+    redoc_url=None if _production else "/redoc",
+)
 errors.install(app)
 app.include_router(auth.router)
 app.include_router(google.router)
@@ -33,6 +39,7 @@ app.include_router(trials.router)
 app.include_router(staff.router)
 app.include_router(hq.router)
 app.include_router(hq_actions.router)
+app.include_router(hq_dashboard.router)
 
 
 @app.middleware("http")

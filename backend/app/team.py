@@ -625,8 +625,8 @@ def signup_with_invitation(body: InviteSignupIn, request: Request, response: Res
                 s.execute(text("UPDATE users SET display_name = :n, email_verified_at = now() WHERE id = :u"),
                           {"n": body.display_name.strip(), "u": user_id})
             else:
-                s.execute(text("""INSERT INTO users (id, email, display_name, email_verified_at)
-                                  VALUES (:u, :e, :n, now())"""),
+                s.execute(text("""INSERT INTO users (id, email, display_name, email_verified_at, signup_source)
+                                  VALUES (:u, :e, :n, now(), 'invite')"""),
                           {"u": user_id, "e": row.email, "n": body.display_name.strip()})
             set_password(s, user_id, password_hash)
             record_acceptance(s, user_id, "invite", request)

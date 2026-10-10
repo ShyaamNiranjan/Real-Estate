@@ -30,6 +30,9 @@ class BillingEvent:
     status: str  # active | past_due | canceled | expired
     current_period_end: datetime | None
     cancel_at_period_end: bool
+    # A money movement that came with the event: {id, kind: charge|refund|failed, amount?, fee?, tax?, currency?}.
+    # Amounts are decimal strings; a missing amount means the plan's list price.
+    payment: dict | None = None
 
     def payload(self) -> dict:
         data = asdict(self)
@@ -99,6 +102,7 @@ class StubProvider:
             workspace_id=UUID(data["w"]), subscription_id=f"stub_sub_{uuid4().hex[:16]}",
             customer_id=f"stub_cus_{data['w'][:8]}", plan_key=data["p"], interval=data["i"], status="active",
             current_period_end=now + _period(data["i"]), cancel_at_period_end=False,
+            payment={"id": f"stub_pay_{uuid4().hex[:16]}", "kind": "charge"},
         )
 
     def portal_url(self, customer_id: str) -> str:
@@ -125,10 +129,16 @@ class StubProvider:
     def simulate(self, sub: SubscriptionRef, what: str) -> BillingEvent:
         if what == "renew":
             end = (sub.current_period_end or datetime.now(UTC)) + _period(sub.interval)
-            return self._event(sub, "subscription.renewed", status="active", current_period_end=end)
+            return self._event(sub, "subscription.renewed", status="active", current_period_end=end,
+                               payment={"id": f"stub_pay_{uuid4().hex[:16]}", "kind": "charge"})
         if what == "payment_failed":
-            return self._event(sub, "subscription.past_due", status="past_due")
+            return self._event(sub, "subscription.past_due", status="past_due",
+                               payment={"id": f"stub_pay_{uuid4().hex[:16]}", "kind": "failed"})
         return self._event(sub, "subscription.expired", status="expired", cancel_at_period_end=False)
+
+    def refund(self, sub: SubscriptionRef, payment_id: str, amount: str) -> BillingEvent:
+        """Refunds one charge in full. The subscription itself is unchanged."""
+        return self._event(sub, "payment.refunded", payment={"id": payment_id, "kind": "refund", "amount": amount})
 
     def sign_webhook(self, body: bytes) -> str:
         return keyed("stub-webhook", body.decode())

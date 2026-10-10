@@ -1,0 +1,113 @@
+name: Backend
+
+on:
+  push:
+    branches: ["**"]
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+  schedule:
+    - cron: "0 3 * * 1"  # weekly dependency audit even when nothing changes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          # Throwaway container that only lives for this job; not a real credential.
+          POSTGRES_PASSWORD: ci-throwaway
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: System packages
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg postgresql-client
+      - name: Python packages
+        run: pip install -r requirements.txt
+      - name: Database roles and connection strings
+        env:
+          PGPASSWORD: ci-throwaway
+        run: |
+          for r in OWNER RW PUBLIC HQ; do declare "PW_$r=$(openssl rand -hex 24)"; done
+          psql -h localhost -U postgres -d postgres -X -q \
+            -v owner_pw="$PW_OWNER" -v rw_pw="$PW_RW" -v public_pw="$PW_PUBLIC" -v hq_pw="$PW_HQ" \
+            -f db/bootstrap.sql
+          url() { echo "postgresql+psycopg://$1:$2@localhost:5432/$3"; }
+          {
+            echo "MIGRATIONS_DATABASE_URL=$(url app_owner "$PW_OWNER" scrollwalk_dev)"
+            echo "DATABASE_URL=$(url app_rw "$PW_RW" scrollwalk_dev)"
+            echo "PUBLIC_DATABASE_URL=$(url app_public "$PW_PUBLIC" scrollwalk_dev)"
+            echo "HQ_DATABASE_URL=$(url app_hq "$PW_HQ" scrollwalk_dev)"
+            echo "TEST_MIGRATIONS_DATABASE_URL=$(url app_owner "$PW_OWNER" scrollwalk_test)"
+            echo "TEST_DATABASE_URL=$(url app_rw "$PW_RW" scrollwalk_test)"
+            echo "TEST_PUBLIC_DATABASE_URL=$(url app_public "$PW_PUBLIC" scrollwalk_test)"
+            echo "TEST_HQ_DATABASE_URL=$(url app_hq "$PW_HQ" scrollwalk_test)"
+            echo "SECRET_KEY=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
+      - name: Migrations apply cleanly (up, down, up)
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+      - name: API contract is up to date
+        run: |
+          python -m app.openapi_export
+          git diff --exit-code ../docs/api/openapi.json
+      - name: Tests
+        run: python -m pytest -q -p no:cacheprovider
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pip-audit
+      - name: Known vulnerabilities in backend dependencies
+        run: pip-audit -r backend/requirements.txt --strict
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install bandit
+      - name: Bandit (medium and high severity)
+        run: bandit -r backend/app -ll -c backend/bandit.yaml
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks (whole history)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

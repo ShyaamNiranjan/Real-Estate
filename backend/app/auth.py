@@ -70,6 +70,8 @@ class SignupIn(BaseModel):
     password: str = Password
     display_name: str = Field(default="", max_length=80)
     accept_terms: Literal[True]
+    referral: str = Field(default="", max_length=64, pattern=r"^[A-Za-z0-9_.-]*$",
+                          description="A `?ref=` code from the landing page, if any (for growth stats).")
 
 
 class EmailIn(BaseModel):
@@ -362,8 +364,10 @@ def signup(body: SignupIn, request: Request) -> Accepted:
                     s.execute(text("UPDATE users SET display_name = :n WHERE id = :u"),
                               {"n": body.display_name.strip(), "u": user_id})
                 else:
-                    s.execute(text("INSERT INTO users (id, email, display_name) VALUES (:u, :e, :n)"),
-                              {"u": user_id, "e": body.email, "n": body.display_name.strip()})
+                    s.execute(text("""INSERT INTO users (id, email, display_name, signup_source, signup_referral)
+                                      VALUES (:u, :e, :n, :src, :ref)"""),
+                              {"u": user_id, "e": body.email, "n": body.display_name.strip(),
+                               "src": "referral" if body.referral else "link", "ref": body.referral})
                 set_password(s, user_id, password_hash)
                 record_acceptance(s, user_id, "signup", request)
                 outgoing = issue_code(s, user_id, "verify", body.email)

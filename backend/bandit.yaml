@@ -1,0 +1,4 @@
+# B608 (SQL built with f-strings) is skipped: every flagged query interpolates only fixed SQL fragments or
+# column names from declared request fields / literals, and binds every value as a parameter (reviewed in
+# slice 12c). New dynamic SQL must follow the same rule.
+skips: ["B608"]

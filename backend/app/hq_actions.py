@@ -212,6 +212,113 @@ def impersonate(workspace_id: UUID, body: ImpersonateIn, response: Response,
     return ImpersonateOut(url=f"{settings.app_url}/studio", expires_at=expires)
 
 
+# ---------- payments, refunds and paid plan changes (through the merchant of record) ----------
+
+
+class PaymentOut(BaseModel):
+    id: UUID
+    provider_payment_id: str
+    kind: Literal["charge", "refund", "failed"]
+    amount: Decimal
+    fee: Decimal
+    tax: Decimal
+    currency: str
+    occurred_at: datetime
+    refunded: bool
+
+
+@router.get("/customers/{workspace_id}/payments", response_model=list[PaymentOut])
+def customer_payments(workspace_id: UUID, staff: Staff = Depends(current_staff)) -> list[PaymentOut]:
+    staff.require("revenue.view")
+    with hq_session() as s:
+        rows = s.execute(text("""SELECT p.*, EXISTS (SELECT 1 FROM payments r WHERE r.kind = 'refund'
+                                          AND r.provider = p.provider AND r.provider_payment_id = p.provider_payment_id)
+                                          AS refunded
+                                 FROM payments p WHERE p.workspace_id = :w ORDER BY p.occurred_at DESC LIMIT 200"""),
+                         {"w": workspace_id}).all()
+    return [PaymentOut(id=r.id, provider_payment_id=r.provider_payment_id, kind=r.kind, amount=r.amount, fee=r.fee,
+                       tax=r.tax, currency=r.currency, occurred_at=r.occurred_at,
+                       refunded=r.kind == "charge" and r.refunded) for r in rows]
+
+
+def _subscription_ref(s: Session, workspace_id: UUID):
+    from app.billing import _ref
+
+    sub = s.execute(text("SELECT * FROM subscriptions WHERE workspace_id = :w"), {"w": workspace_id}).first()
+    return sub, (_ref(sub) if sub else None)
+
+
+class RefundIn(BaseModel):
+    payment_id: UUID
+    reason: str = Reason
+
+
+@router.post("/customers/{workspace_id}/refund", response_model=Done)
+def refund(workspace_id: UUID, body: RefundIn, staff: Staff = Depends(current_staff)) -> Done:
+    """Full refund of one charge through the merchant of record. The plan itself isn't cancelled."""
+    from app.billing import process_event
+    from app.billing_providers import get_provider
+
+    staff.require("billing.refund")
+    provider = get_provider()
+    with hq_session() as s:
+        pay = s.execute(text("""SELECT * FROM payments WHERE id = :id AND workspace_id = :w AND kind = 'charge'"""),
+                        {"id": body.payment_id, "w": workspace_id}).first()
+        if pay is None:
+            raise ApiError(404, "not_found", "Payment not found.")
+        if pay.provider != provider.name:
+            raise ApiError(409, "other_provider", "This payment was taken by a different provider.")
+        if s.execute(text("""SELECT 1 FROM payments WHERE kind = 'refund' AND provider = :p
+                             AND provider_payment_id = :id"""),
+                     {"p": pay.provider, "id": pay.provider_payment_id}).first():
+            raise ApiError(409, "already_refunded", "This payment was already refunded.")
+        _, ref = _subscription_ref(s, workspace_id)
+        if ref is None:
+            raise ApiError(409, "no_subscription", "This customer has no subscription.")
+    if process_event(provider.name, provider.refund(ref, pay.provider_payment_id, str(pay.amount))) == "rejected":
+        raise ApiError(502, "refund_failed", "The payment provider didn't accept the refund.")
+    with hq_session() as s:
+        audit(s, staff, "customer.refunded", workspace_id=workspace_id, reason=body.reason,
+              payment_id=str(body.payment_id), amount=str(pay.amount))
+    return Done(status="refunded")
+
+
+class ChangePlanIn(BaseModel):
+    plan_key: str = Field(max_length=30)
+    interval: Literal["month", "year"]
+    reason: str = Reason
+
+
+@router.post("/customers/{workspace_id}/change-plan", response_model=Done)
+def change_paid_plan(workspace_id: UUID, body: ChangePlanIn, staff: Staff = Depends(current_staff)) -> Done:
+    """Moves a paying customer to another plan through the merchant of record (it prorates).
+    For customers without a subscription use give-plan."""
+    from app.billing import process_event
+    from app.billing_providers import get_provider
+
+    staff.require("customers.manage")
+    provider = get_provider()
+    with hq_session() as s:
+        sub, ref = _subscription_ref(s, workspace_id)
+        if sub is None or sub.status not in ("active", "past_due"):
+            raise ApiError(409, "no_subscription", "This customer isn't paying; use give-plan instead.")
+        plan = s.execute(text("SELECT * FROM plans WHERE key = :k"), {"k": body.plan_key}).first()
+        if plan is None:
+            raise ApiError(422, "invalid_plan", "Choose one of the plans.")
+        if sub.plan_key == plan.key and sub.billing_interval == body.interval:
+            raise ApiError(409, "same_plan", "They're already on this plan.")
+        price_id = (plan.provider_price_ids or {}).get(body.interval)
+        if provider.name != "stub" and not price_id:
+            raise ApiError(409, "plan_unavailable", "This plan has no price at the payment provider yet.")
+    event = provider.change_plan(ref, plan.key, body.interval, price_id)
+    if event is not None and process_event(provider.name, event) == "rejected":
+        raise ApiError(502, "change_failed", "The payment provider didn't accept the change.")
+    with hq_session() as s:
+        audit(s, staff, "customer.plan_changed", workspace_id=workspace_id, reason=body.reason,
+              plan_key=plan.key, interval=body.interval, previous=sub.plan_key)
+    return Done(status="changed")
+
+
 # ---------- reports and takedowns ----------
 
 

@@ -150,8 +150,8 @@ def sign_in_google_user(request: Request, claims: dict):
     user_id = uuid4()
     with tenant_session(user_id) as s:
         s.execute(
-            text("""INSERT INTO users (id, email, google_sub, display_name, avatar_url, email_verified_at)
-                    VALUES (:u, :e, :s, :n, :a, now())"""),
+            text("""INSERT INTO users (id, email, google_sub, display_name, avatar_url, email_verified_at, signup_source)
+                    VALUES (:u, :e, :s, :n, :a, now(), 'google')"""),
             {"u": user_id, "e": email, "s": sub, "n": (claims.get("name") or "")[:80], "a": claims.get("picture")},
         )
         record_acceptance(s, user_id, "google", request)
